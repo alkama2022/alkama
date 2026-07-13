@@ -12,4 +12,23 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  vite: {
+    server: {
+      proxy: {
+        // Proxy /api/* and /auth/* to Django so the browser avoids CORS issues in dev
+        "/api": {
+          target: "http://localhost:8000",
+          changeOrigin: true,
+        },
+        "/auth": {
+          target: "http://localhost:8000",
+          changeOrigin: true,
+        },
+        "/media": {
+          target: "http://localhost:8000",
+          changeOrigin: true,
+        },
+      },
+    },
+  },
 });

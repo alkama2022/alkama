@@ -1,7 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { api, type Brand, type Paginated, type Product } from "@/lib/api";
-import { ArrowRight, ShieldCheck, Truck, Wrench } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { toast } from "sonner";
+import { api, mediaUrl, type Brand, type Paginated, type Product } from "@/lib/api";
+import { addToCart } from "@/lib/cart";
+import { ProductDetailDrawer } from "@/components/ProductDetailDrawer";
+import { ArrowRight, Check, Eye, ShieldCheck, ShoppingCart, Truck, Wrench } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   component: Home,
@@ -139,18 +143,44 @@ function Home() {
 }
 
 export function ProductCard({ product }: { product: Product }) {
+  const qc = useQueryClient();
   const img = product.images?.find((i) => i.is_primary) || product.images?.[0];
+  const imgSrc = mediaUrl(img?.image);
   const extraImages = (product.images ?? []).length;
+  const [qty, setQty] = useState(1);
+  const [justAdded, setJustAdded] = useState(false);
+
+  const hasDiscount =
+    product.discount_price != null &&
+    Number(product.discount_price) > 0 &&
+    Number(product.discount_price) < Number(product.price);
+  const displayPrice = hasDiscount ? product.discount_price! : product.price;
+
+  const add = useMutation({
+    mutationFn: () => addToCart(product.id, qty),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["cart"] });
+      window.dispatchEvent(new Event("cart:updated"));
+      setJustAdded(true);
+      setTimeout(() => setJustAdded(false), 2000);
+      toast.success(`${qty} × ${product.model_name} added to cart`);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const outOfStock = product.inventory === 0;
+
   return (
     <div className="group flex flex-col overflow-hidden rounded-lg border border-border bg-card transition hover:border-primary hover:shadow-lg">
+      {/* Image */}
       <Link
         to="/products/$id"
         params={{ id: String(product.id) }}
         className="relative aspect-square overflow-hidden bg-surface block"
       >
-        {img ? (
+        {imgSrc ? (
           <img
-            src={img.image}
+            src={imgSrc}
             alt={product.model_name}
             className="h-full w-full object-cover transition group-hover:scale-105"
             loading="lazy"
@@ -163,32 +193,89 @@ export function ProductCard({ product }: { product: Product }) {
         <div className="absolute left-3 top-3 rounded bg-background/90 px-2 py-1 text-xs font-semibold uppercase tracking-wider">
           {product.brand}
         </div>
-        {extraImages > 1 && (
+        {outOfStock && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+            <span className="rounded bg-destructive px-3 py-1 text-xs font-bold uppercase tracking-widest text-white">
+              Out of stock
+            </span>
+          </div>
+        )}
+        {extraImages > 1 && !outOfStock && (
           <div className="absolute right-3 bottom-3 rounded bg-background/80 px-2 py-1 text-xs text-muted-foreground">
             +{extraImages - 1} photo{extraImages > 2 ? "s" : ""}
           </div>
         )}
       </Link>
+
+      {/* Info */}
       <div className="flex flex-1 flex-col p-4">
         <div className="text-xs uppercase tracking-widest text-muted-foreground">
           {product.category}
         </div>
-        <div className="mt-1 font-display text-xl uppercase leading-tight">
+        <Link
+          to="/products/$id"
+          params={{ id: String(product.id) }}
+          className="mt-1 font-display text-xl uppercase leading-tight hover:text-primary transition"
+        >
           {product.model_name}
-        </div>
-        <div className="mt-2 text-sm text-muted-foreground">
+        </Link>
+        <div className="mt-1 text-sm text-muted-foreground">
           {product.width}/{product.aspect_ratio} R{product.rim_diameter} · {product.load_index}
           {product.speed_rating}
         </div>
-        <div className="mt-4 flex items-center justify-between gap-3">
-          <span className="font-display text-2xl text-primary">${product.price}</span>
-          <Link
-            to="/products/$id"
-            params={{ id: String(product.id) }}
-            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-xs font-semibold uppercase tracking-widest text-primary-foreground hover:brightness-110 transition"
+
+        {/* Price */}
+        <div className="mt-3 flex items-baseline gap-2">
+          <span className="font-display text-2xl text-primary">${displayPrice}</span>
+          {hasDiscount && (
+            <span className="text-sm text-muted-foreground line-through">${product.price}</span>
+          )}
+        </div>
+
+        {/* Qty stepper + Add to cart */}
+        <div className="mt-4 flex items-center gap-2">
+          {/* Quantity stepper */}
+          <div className="inline-flex items-center rounded-md border border-border bg-background">
+            <button
+              type="button"
+              onClick={() => setQty((q) => Math.max(1, q - 1))}
+              disabled={qty <= 1 || outOfStock}
+              className="px-2 py-1.5 text-muted-foreground hover:text-primary disabled:opacity-30 transition"
+              aria-label="Decrease"
+            >
+              −
+            </button>
+            <span className="w-8 text-center text-sm font-semibold">{qty}</span>
+            <button
+              type="button"
+              onClick={() => setQty((q) => Math.min(product.inventory, q + 1))}
+              disabled={qty >= product.inventory || outOfStock}
+              className="px-2 py-1.5 text-muted-foreground hover:text-primary disabled:opacity-30 transition"
+              aria-label="Increase"
+            >
+              +
+            </button>
+          </div>
+
+          {/* Add to cart button */}
+          <button
+            type="button"
+            disabled={outOfStock || add.isPending}
+            onClick={() => add.mutate()}
+            className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold uppercase tracking-widest transition disabled:opacity-50 ${
+              justAdded
+                ? "bg-green-600 text-white"
+                : "bg-primary text-primary-foreground hover:brightness-110"
+            }`}
           >
-            View product
-          </Link>
+            {justAdded ? (
+              <><Check className="h-3.5 w-3.5" /> Added</>
+            ) : add.isPending ? (
+              "Adding…"
+            ) : (
+              <><ShoppingCart className="h-3.5 w-3.5" /> Add to cart</>
+            )}
+          </button>
         </div>
       </div>
     </div>

@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { api, WHATSAPP_NUMBER, type Cart } from "@/lib/api";
+import { api, mediaUrl, WHATSAPP_NUMBER, type Cart } from "@/lib/api";
 import { clearStoredCartId, ensureCart, getStoredCartId } from "@/lib/cart";
 import { Minus, Plus, Trash2 } from "lucide-react";
 
@@ -76,6 +76,24 @@ function CartPage() {
                 key={it.id}
                 className="flex flex-col gap-4 rounded-lg border border-border bg-card p-4 sm:flex-row sm:items-center"
               >
+                {/* Product image */}
+                <Link
+                  to="/products/$id"
+                  params={{ id: String(it.product.id) }}
+                  className="flex-shrink-0"
+                >
+                  {it.product.images?.[0] ? (
+                    <img
+                      src={mediaUrl(it.product.images[0].image) ?? it.product.images[0].image}
+                      alt={it.product.model_name}
+                      className="h-20 w-20 rounded-md border border-border object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-20 w-20 items-center justify-center rounded-md border border-border bg-surface">
+                      <div className="h-12 w-12 rounded-full border-4 border-foreground/40" />
+                    </div>
+                  )}
+                </Link>
                 <div className="flex-1">
                   <Link
                     to="/products/$id"

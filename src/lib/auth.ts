@@ -1,23 +1,28 @@
 import { useSyncExternalStore } from "react";
-import { API_URL } from "./api";
 
 // ---------------------------------------------------------------------------
-// Django-style token auth. Superuser gate for /admin.
+// Djoser JWT auth.
 //
-// Expected backend endpoints (DRF conventions):
-//   POST  {API_URL}/auth/login/     { username, password } -> { token, user:{is_superuser,...} }
-//   GET   {API_URL}/auth/users/me/  Authorization: Token <token> -> { is_superuser, ... }
-//   POST  {API_URL}/auth/logout/    (optional)
+// Endpoints (mounted at /auth/ in your Django urls.py):
+//   POST  /auth/jwt/create/   { username, password } -> { access, refresh }
+//   GET   /auth/users/me/     Authorization: Bearer <access>  -> { is_superuser, ... }
+//   POST  /auth/jwt/destroy/  Authorization: Bearer <access>  (blacklist / logout)
 //
-// If your backend uses different paths, override with VITE_AUTH_LOGIN_PATH etc.
+// Override any path via .env:
+//   VITE_AUTH_LOGIN_PATH   (full URL or path)
+//   VITE_AUTH_ME_PATH
+//   VITE_AUTH_LOGOUT_PATH
 // ---------------------------------------------------------------------------
 
-const LOGIN_PATH = (import.meta.env.VITE_AUTH_LOGIN_PATH as string | undefined) || "/auth/login/";
-const ME_PATH = (import.meta.env.VITE_AUTH_ME_PATH as string | undefined) || "/auth/users/me/";
-const LOGOUT_PATH = (import.meta.env.VITE_AUTH_LOGOUT_PATH as string | undefined) || "/auth/logout/";
+const env = (k: string) => (import.meta.env[k] as string | undefined) || undefined;
+
+// Paths can be full URLs (when auth is not under /api/) or relative paths
+const LOGIN_URL  = env("VITE_AUTH_LOGIN_PATH")  ?? "http://localhost:8000/auth/jwt/create/";
+const ME_URL     = env("VITE_AUTH_ME_PATH")      ?? "http://localhost:8000/auth/users/me/";
+const LOGOUT_URL = env("VITE_AUTH_LOGOUT_PATH")  ?? "http://localhost:8000/auth/jwt/destroy/";
 
 const TOKEN_KEY = "apex.admin.token";
-const USER_KEY = "apex.admin.user";
+const USER_KEY  = "apex.admin.user";
 
 export type AuthUser = {
   id?: number;
@@ -35,7 +40,7 @@ let state: AuthState = readInitial();
 function readInitial(): AuthState {
   if (typeof window === "undefined") return { token: null, user: null };
   try {
-    const token = localStorage.getItem(TOKEN_KEY);
+    const token   = localStorage.getItem(TOKEN_KEY);
     const userRaw = localStorage.getItem(USER_KEY);
     return { token, user: userRaw ? (JSON.parse(userRaw) as AuthUser) : null };
   } catch {
@@ -50,71 +55,66 @@ function setState(next: AuthState) {
     else localStorage.removeItem(TOKEN_KEY);
     if (next.user) localStorage.setItem(USER_KEY, JSON.stringify(next.user));
     else localStorage.removeItem(USER_KEY);
-  } catch {
-    /* ignore storage errors */
-  }
+  } catch { /* ignore */ }
   listeners.forEach((l) => l());
 }
 
-export function getToken(): string | null {
-  return state.token;
-}
-
-export function getUser(): AuthUser | null {
-  return state.user;
-}
+export function getToken(): string | null  { return state.token; }
+export function getUser():  AuthUser | null { return state.user;  }
 
 export function useAuth(): AuthState {
   return useSyncExternalStore(
-    (l) => {
-      listeners.add(l);
-      return () => listeners.delete(l);
-    },
+    (l) => { listeners.add(l); return () => listeners.delete(l); },
     () => state,
     () => ({ token: null, user: null }),
   );
 }
 
+/** Build the Authorization header value — Bearer for JWT, Token for DRF token auth */
+export function authHeader(token: string): string {
+  return `Bearer ${token}`;
+}
+
 export async function login(username: string, password: string): Promise<AuthUser> {
-  const res = await fetch(`${API_URL}${LOGIN_PATH}`, {
+  const res = await fetch(LOGIN_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
     body: JSON.stringify({ username, password }),
   });
+
   if (!res.ok) {
-    let msg = "Invalid credentials";
+    let msg = `Login failed (${res.status} at ${LOGIN_URL})`;
     try {
       const b = await res.json();
-      msg = b.detail || b.non_field_errors?.[0] || msg;
-    } catch {
-      /* ignore */
-    }
+      // djoser returns { detail: "..." } or { non_field_errors: [...] }
+      const detail = b.detail || b.non_field_errors?.[0] || b.username?.[0] || b.password?.[0];
+      if (detail) msg = detail;
+    } catch { /* ignore */ }
     throw new Error(msg);
   }
-  const data = (await res.json()) as {
-    token?: string;
-    key?: string;
+
+  const data = await res.json() as {
+    access?: string;      // JWT access token (djoser)
+    refresh?: string;     // JWT refresh token
+    token?: string;       // DRF simple token fallback
+    key?: string;         // dj-rest-auth fallback
     auth_token?: string;
     user?: AuthUser;
     is_superuser?: boolean;
   };
-  const token = data.token || data.key || data.auth_token;
-  if (!token) throw new Error("No token in login response");
 
+  const token = data.access || data.token || data.key || data.auth_token;
+  if (!token) throw new Error("No access token in login response. Check your auth backend.");
+
+  // Fetch /auth/users/me/ to get is_superuser etc.
   let user: AuthUser | null = data.user ?? null;
   if (!user || user.is_superuser === undefined) {
-    // Fetch current user to confirm is_superuser
     try {
-      const meRes = await fetch(`${API_URL}${ME_PATH}`, {
-        headers: {
-          Authorization: `Token ${token}`,
-          Accept: "application/json",
-        },
+      const meRes = await fetch(ME_URL, {
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
       });
-      if (meRes.ok) user = (await meRes.json()) as AuthUser;
-    } catch {
-      /* ignore */
-    }
+      if (meRes.ok) user = await meRes.json() as AuthUser;
+    } catch { /* ignore */ }
   }
   if (!user) user = { username, is_superuser: data.is_superuser };
 
@@ -127,12 +127,10 @@ export async function logout(): Promise<void> {
   setState({ token: null, user: null });
   if (token) {
     try {
-      await fetch(`${API_URL}${LOGOUT_PATH}`, {
+      await fetch(LOGOUT_URL, {
         method: "POST",
-        headers: { Authorization: `Token ${token}` },
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       });
-    } catch {
-      /* ignore */
-    }
+    } catch { /* ignore */ }
   }
 }

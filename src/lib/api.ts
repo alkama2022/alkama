@@ -9,30 +9,38 @@ type FetchOpts = RequestInit & { params?: Record<string, string | number | undef
 
 export async function api<T = unknown>(path: string, opts: FetchOpts = {}): Promise<T> {
   const { params, headers, ...rest } = opts;
-  const url = new URL(API_URL + path, window.location.origin);
+
+  // Build absolute URL — API_URL is already absolute (e.g. http://localhost:8000/api)
+  let urlStr = API_URL + path;
   if (params) {
+    const qs = new URLSearchParams();
     Object.entries(params).forEach(([k, v]) => {
-      if (v !== undefined && v !== null && v !== "") url.searchParams.set(k, String(v));
+      if (v !== undefined && v !== null && v !== "") qs.set(k, String(v));
     });
+    const q = qs.toString();
+    if (q) urlStr += (urlStr.includes("?") ? "&" : "?") + q;
   }
-  // Attach Django token auth if present. Read lazily to avoid circular import.
+
+  // Attach JWT Bearer auth if present
   let authHeader: Record<string, string> = {};
   try {
     const token =
       typeof window !== "undefined" ? window.localStorage.getItem("apex.admin.token") : null;
-    if (token) authHeader = { Authorization: `Token ${token}` };
+    if (token) authHeader = { Authorization: `Bearer ${token}` };
   } catch {
     /* ignore */
   }
-  const res = await fetch(url.toString().replace(window.location.origin, ""), {
+
+  const res = await fetch(urlStr, {
     ...rest,
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json",
       ...authHeader,
-      ...(headers || {}),
+      ...(headers as Record<string, string> | undefined),
     },
   });
+
   if (!res.ok) {
     let msg = `${res.status} ${res.statusText}`;
     try {
@@ -49,12 +57,27 @@ export async function api<T = unknown>(path: string, opts: FetchOpts = {}): Prom
 
 // --- Types matching the Django serializers ---
 
-export type ProductImage = { id: number; image: string; is_primary: boolean };
+export type ProductImage = {
+  id: number;
+  image: string;       // may be a relative path like /media/store/images/foo.jpg
+  is_primary: boolean;
+};
+
+/** Resolve a potentially-relative media URL to a full URL pointing at the Django server */
+export function mediaUrl(path: string | null | undefined): string | null {
+  if (!path) return null;
+  if (path.startsWith("http://") || path.startsWith("https://") || path.startsWith("//")) {
+    return path;
+  }
+  // path is relative — prepend the Django API origin
+  const origin = API_URL.replace(/\/api\/?$/, "").replace(/\/$/, "");
+  return `${origin}${path.startsWith("/") ? "" : "/"}${path}`;
+}
 
 export type Product = {
   id: number;
-  brand: string;
-  category: string;
+  brand: string;       // StringRelatedField — returns brand name
+  category: string;    // StringRelatedField — returns category name
   model_name: string;
   width: number;
   aspect_ratio: number;
@@ -62,6 +85,10 @@ export type Product = {
   load_index: number;
   speed_rating: string;
   price: string;
+  discount_price?: string | null;
+  is_active?: boolean;
+  created_at?: string;
+  updated_at?: string;
   description: string;
   inventory: number;
   images: ProductImage[];
