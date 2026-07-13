@@ -95,10 +95,8 @@ export function mediaUrl(path: string | null | undefined): string | null {
 
 export type Product = {
   id: number;
-  brand: number | string;    // PK integer for writes; name string for display
-  category: number | string;
-  brand_name?: string;       // read-only display name from serializer
-  category_name?: string;
+  brand: string;        // StringRelatedField — returns brand name
+  category: string;     // StringRelatedField — returns category name
   model_name: string;
   width: number;
   aspect_ratio: number;

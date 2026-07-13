@@ -454,8 +454,8 @@ function ProductsTable() {
                 )}
               </td>
               <td className="px-4 py-2 font-semibold">{p.model_name}</td>
-              <td className="px-4 py-2">{p.brand_name ?? p.brand}</td>
-              <td className="px-4 py-2">{p.category_name ?? p.category}</td>
+              <td className="px-4 py-2">{p.brand}</td>
+              <td className="px-4 py-2">{p.category}</td>
               <td className="px-4 py-2 text-xs">{p.width}/{p.aspect_ratio} R{p.rim_diameter}</td>
               <td className="px-4 py-2 font-display text-primary">₦{p.price}</td>
               <td className="px-4 py-2 text-xs text-muted-foreground">{p.discount_price ? `₦${p.discount_price}` : "—"}</td>

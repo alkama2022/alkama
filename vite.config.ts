@@ -8,27 +8,25 @@ import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
 export default defineConfig({
   tanstackStart: {
-    // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
-    // nitro/vite builds from this
     server: { entry: "server" },
   },
   vite: {
     server: {
       proxy: {
-        // Proxy /api/* and /auth/* to Django so the browser avoids CORS issues in dev
-        "/api": {
-          target: "http://localhost:8000",
-          changeOrigin: true,
-        },
-        "/auth": {
-          target: "http://localhost:8000",
-          changeOrigin: true,
-        },
-        "/media": {
-          target: "http://localhost:8000",
-          changeOrigin: true,
-        },
+        "/api": { target: "http://localhost:8000", changeOrigin: true },
+        "/auth": { target: "http://localhost:8000", changeOrigin: true },
+        "/media": { target: "http://localhost:8000", changeOrigin: true },
       },
+    },
+    optimizeDeps: {
+      // Force Vite to always re-bundle these on startup — prevents stale cache errors
+      include: [
+        "use-sync-external-store/shim/with-selector",
+        "@tanstack/react-query",
+        "@tanstack/react-router",
+        "react",
+        "react-dom",
+      ],
     },
   },
 });
