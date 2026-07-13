@@ -37,6 +37,9 @@ type AuthState = { token: string | null; user: AuthUser | null };
 const listeners = new Set<() => void>();
 let state: AuthState = readInitial();
 
+// Stable SSR snapshot — same object reference every time, stops the infinite loop
+const SSR_SNAPSHOT: AuthState = { token: null, user: null };
+
 function readInitial(): AuthState {
   if (typeof window === "undefined") return { token: null, user: null };
   try {
@@ -66,13 +69,13 @@ export function useAuth(): AuthState {
   return useSyncExternalStore(
     (l) => { listeners.add(l); return () => listeners.delete(l); },
     () => state,
-    () => ({ token: null, user: null }),
+    () => SSR_SNAPSHOT,   // stable reference — no infinite loop
   );
 }
 
 /** Build the Authorization header value — Bearer for JWT, Token for DRF token auth */
 export function authHeader(token: string): string {
-  return `Bearer ${token}`;
+  return `JWT ${token}`;
 }
 
 export async function login(username: string, password: string): Promise<AuthUser> {
@@ -111,7 +114,7 @@ export async function login(username: string, password: string): Promise<AuthUse
   if (!user || user.is_superuser === undefined) {
     try {
       const meRes = await fetch(ME_URL, {
-        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+        headers: { Authorization: `JWT ${token}`, Accept: "application/json" },
       });
       if (meRes.ok) user = await meRes.json() as AuthUser;
     } catch { /* ignore */ }
@@ -129,7 +132,7 @@ export async function logout(): Promise<void> {
     try {
       await fetch(LOGOUT_URL, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        headers: { Authorization: `JWT ${token}`, "Content-Type": "application/json" },
       });
     } catch { /* ignore */ }
   }

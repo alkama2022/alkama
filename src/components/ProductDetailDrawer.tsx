@@ -188,12 +188,12 @@ function DrawerContent({ productId, onClose }: { productId: number; onClose: () 
 
       {/* Price */}
       <div className="mt-4 flex flex-wrap items-baseline gap-3">
-        <span className="font-display text-3xl text-primary">${displayPrice}</span>
+        <span className="font-display text-3xl text-primary">₦{displayPrice}</span>
         {hasDiscount && (
           <>
-            <span className="text-base text-muted-foreground line-through">${p.price}</span>
+            <span className="text-base text-muted-foreground line-through">₦{p.price}</span>
             <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-bold text-primary">
-              <Tag className="h-3 w-3" /> Save ${savings}
+              <Tag className="h-3 w-3" /> Save ₦{savings}
             </span>
           </>
         )}

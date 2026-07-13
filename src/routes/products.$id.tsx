@@ -150,16 +150,16 @@ function ProductDetail() {
 
           {/* Price */}
           <div className="mt-5 flex items-baseline gap-3">
-            <span className="font-display text-4xl text-primary">${displayPrice}</span>
+            <span className="font-display text-4xl text-primary">₦{displayPrice}</span>
             {hasDiscount && (
               <>
-                <span className="text-lg text-muted-foreground line-through">${p.price}</span>
+                <span className="text-lg text-muted-foreground line-through">₦{p.price}</span>
                 <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-bold text-primary">
-                  <Tag className="h-3 w-3" /> Save ${savings}
+                  <Tag className="h-3 w-3" /> Save ₦{savings}
                 </span>
               </>
             )}
-            <span className="ml-auto text-sm text-muted-foreground">per tyre</span>
+              <span className="ml-auto text-sm text-muted-foreground">per tyre</span>
           </div>
 
           {/* Stock badge */}

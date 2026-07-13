@@ -149,6 +149,7 @@ export function ProductCard({ product }: { product: Product }) {
   const extraImages = (product.images ?? []).length;
   const [qty, setQty] = useState(1);
   const [justAdded, setJustAdded] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const hasDiscount =
     product.discount_price != null &&
@@ -171,113 +172,128 @@ export function ProductCard({ product }: { product: Product }) {
   const outOfStock = product.inventory === 0;
 
   return (
-    <div className="group flex flex-col overflow-hidden rounded-lg border border-border bg-card transition hover:border-primary hover:shadow-lg">
-      {/* Image */}
-      <Link
-        to="/products/$id"
-        params={{ id: String(product.id) }}
-        className="relative aspect-square overflow-hidden bg-surface block"
-      >
-        {imgSrc ? (
-          <img
-            src={imgSrc}
-            alt={product.model_name}
-            className="h-full w-full object-cover transition group-hover:scale-105"
-            loading="lazy"
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center">
-            <div className="h-3/4 w-3/4 rounded-full border-8 border-foreground/70" />
-          </div>
-        )}
-        <div className="absolute left-3 top-3 rounded bg-background/90 px-2 py-1 text-xs font-semibold uppercase tracking-wider">
-          {product.brand}
-        </div>
-        {outOfStock && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-            <span className="rounded bg-destructive px-3 py-1 text-xs font-bold uppercase tracking-widest text-white">
-              Out of stock
-            </span>
-          </div>
-        )}
-        {extraImages > 1 && !outOfStock && (
-          <div className="absolute right-3 bottom-3 rounded bg-background/80 px-2 py-1 text-xs text-muted-foreground">
-            +{extraImages - 1} photo{extraImages > 2 ? "s" : ""}
-          </div>
-        )}
-      </Link>
-
-      {/* Info */}
-      <div className="flex flex-1 flex-col p-4">
-        <div className="text-xs uppercase tracking-widest text-muted-foreground">
-          {product.category}
-        </div>
-        <Link
-          to="/products/$id"
-          params={{ id: String(product.id) }}
-          className="mt-1 font-display text-xl uppercase leading-tight hover:text-primary transition"
+    <>
+      <div className="group flex flex-col overflow-hidden rounded-lg border border-border bg-card transition hover:border-primary hover:shadow-lg">
+        {/* Image */}
+        <button
+          type="button"
+          onClick={() => setDrawerOpen(true)}
+          className="relative aspect-square overflow-hidden bg-surface block w-full text-left"
         >
-          {product.model_name}
-        </Link>
-        <div className="mt-1 text-sm text-muted-foreground">
-          {product.width}/{product.aspect_ratio} R{product.rim_diameter} · {product.load_index}
-          {product.speed_rating}
-        </div>
-
-        {/* Price */}
-        <div className="mt-3 flex items-baseline gap-2">
-          <span className="font-display text-2xl text-primary">${displayPrice}</span>
-          {hasDiscount && (
-            <span className="text-sm text-muted-foreground line-through">${product.price}</span>
+          {imgSrc ? (
+            <img
+              src={imgSrc}
+              alt={product.model_name}
+              className="h-full w-full object-cover transition group-hover:scale-105"
+              loading="lazy"
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center">
+              <div className="h-3/4 w-3/4 rounded-full border-8 border-foreground/70" />
+            </div>
           )}
-        </div>
-
-        {/* Qty stepper + Add to cart */}
-        <div className="mt-4 flex items-center gap-2">
-          {/* Quantity stepper */}
-          <div className="inline-flex items-center rounded-md border border-border bg-background">
-            <button
-              type="button"
-              onClick={() => setQty((q) => Math.max(1, q - 1))}
-              disabled={qty <= 1 || outOfStock}
-              className="px-2 py-1.5 text-muted-foreground hover:text-primary disabled:opacity-30 transition"
-              aria-label="Decrease"
-            >
-              −
-            </button>
-            <span className="w-8 text-center text-sm font-semibold">{qty}</span>
-            <button
-              type="button"
-              onClick={() => setQty((q) => Math.min(product.inventory, q + 1))}
-              disabled={qty >= product.inventory || outOfStock}
-              className="px-2 py-1.5 text-muted-foreground hover:text-primary disabled:opacity-30 transition"
-              aria-label="Increase"
-            >
-              +
-            </button>
+          <div className="absolute left-3 top-3 rounded bg-background/90 px-2 py-1 text-xs font-semibold uppercase tracking-wider">
+            {product.brand}
           </div>
+          {outOfStock && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+              <span className="rounded bg-destructive px-3 py-1 text-xs font-bold uppercase tracking-widest text-white">
+                Out of stock
+              </span>
+            </div>
+          )}
+          {extraImages > 1 && !outOfStock && (
+            <div className="absolute right-3 bottom-3 rounded bg-background/80 px-2 py-1 text-xs text-muted-foreground">
+              +{extraImages - 1} photo{extraImages > 2 ? "s" : ""}
+            </div>
+          )}
+        </button>
 
-          {/* Add to cart button */}
+        {/* Info */}
+        <div className="flex flex-1 flex-col p-4">
+          <div className="text-xs uppercase tracking-widest text-muted-foreground">
+            {product.category}
+          </div>
           <button
             type="button"
-            disabled={outOfStock || add.isPending}
-            onClick={() => add.mutate()}
-            className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold uppercase tracking-widest transition disabled:opacity-50 ${
-              justAdded
-                ? "bg-green-600 text-white"
-                : "bg-primary text-primary-foreground hover:brightness-110"
-            }`}
+            onClick={() => setDrawerOpen(true)}
+            className="mt-1 text-left font-display text-xl uppercase leading-tight hover:text-primary transition"
           >
-            {justAdded ? (
-              <><Check className="h-3.5 w-3.5" /> Added</>
-            ) : add.isPending ? (
-              "Adding…"
-            ) : (
-              <><ShoppingCart className="h-3.5 w-3.5" /> Add to cart</>
+            {product.model_name}
+          </button>
+          <div className="mt-1 text-sm text-muted-foreground">
+            {product.width}/{product.aspect_ratio} R{product.rim_diameter} · {product.load_index}
+            {product.speed_rating}
+          </div>
+
+          {/* Price */}
+          <div className="mt-3 flex items-baseline gap-2">
+            <span className="font-display text-2xl text-primary">₦{displayPrice}</span>
+            {hasDiscount && (
+              <span className="text-sm text-muted-foreground line-through">₦{product.price}</span>
             )}
+          </div>
+
+          {/* Qty stepper + Add to cart */}
+          <div className="mt-4 flex items-center gap-2">
+            <div className="inline-flex items-center rounded-md border border-border bg-background">
+              <button
+                type="button"
+                onClick={() => setQty((q) => Math.max(1, q - 1))}
+                disabled={qty <= 1 || outOfStock}
+                className="px-2 py-1.5 text-muted-foreground hover:text-primary disabled:opacity-30 transition"
+                aria-label="Decrease"
+              >
+                −
+              </button>
+              <span className="w-8 text-center text-sm font-semibold">{qty}</span>
+              <button
+                type="button"
+                onClick={() => setQty((q) => Math.min(product.inventory, q + 1))}
+                disabled={qty >= product.inventory || outOfStock}
+                className="px-2 py-1.5 text-muted-foreground hover:text-primary disabled:opacity-30 transition"
+                aria-label="Increase"
+              >
+                +
+              </button>
+            </div>
+
+            <button
+              type="button"
+              disabled={outOfStock || add.isPending}
+              onClick={() => add.mutate()}
+              className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold uppercase tracking-widest transition disabled:opacity-50 ${
+                justAdded
+                  ? "bg-green-600 text-white"
+                  : "bg-primary text-primary-foreground hover:brightness-110"
+              }`}
+            >
+              {justAdded ? (
+                <><Check className="h-3.5 w-3.5" /> Added</>
+              ) : add.isPending ? (
+                "Adding…"
+              ) : (
+                <><ShoppingCart className="h-3.5 w-3.5" /> Add to cart</>
+              )}
+            </button>
+          </div>
+
+          {/* View product button */}
+          <button
+            type="button"
+            onClick={() => setDrawerOpen(true)}
+            className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-md border border-border px-3 py-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground hover:border-primary hover:text-primary transition"
+          >
+            <Eye className="h-3.5 w-3.5" /> View product
           </button>
         </div>
       </div>
-    </div>
+
+      {/* Product detail drawer */}
+      <ProductDetailDrawer
+        productId={drawerOpen ? product.id : null}
+        onClose={() => setDrawerOpen(false)}
+      />
+    </>
   );
 }

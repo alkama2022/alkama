@@ -102,7 +102,7 @@ function CartPage() {
                   >
                     {it.product.model_name}
                   </Link>
-                  <div className="text-sm text-muted-foreground">${it.product.price} each</div>
+                  <div className="text-sm text-muted-foreground">₦{it.product.price} each</div>
                 </div>
                 <div className="inline-flex items-center rounded-md border border-border">
                   <button
@@ -124,7 +124,7 @@ function CartPage() {
                   </button>
                 </div>
                 <div className="w-24 text-right font-display text-lg text-primary">
-                  ${Number(it.total_price).toFixed(2)}
+                  ₦{Number(it.total_price).toFixed(2)}
                 </div>
                 <button
                   onClick={() => removeItem.mutate(it.id)}
@@ -161,7 +161,7 @@ function CheckoutPanel({ cart, onDone }: { cart: Cart; onDone: () => void }) {
       }));
       const total = Number(cart.total_price);
       const lines = cart.items
-        .map((i) => `• ${i.product.model_name} × ${i.quantity} — $${Number(i.total_price).toFixed(2)}`)
+        .map((i) => `• ${i.product.model_name} × ${i.quantity} — ₦${Number(i.total_price).toFixed(2)}`)
         .join("\n");
       const message_text = [
         `New order request from ${form.name}`,
@@ -171,16 +171,15 @@ function CheckoutPanel({ cart, onDone }: { cart: Cart; onDone: () => void }) {
         "Items:",
         lines,
         "",
-        `Total: $${total.toFixed(2)}`,
+        `Total: ₦${total.toFixed(2)}`,
         form.note ? `\nNote: ${form.note}` : "",
       ]
         .filter(Boolean)
         .join("\n");
 
-      const whatsapp_url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
-        message_text
-      )}`;
+      const whatsapp_url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message_text)}`;
 
+      // Save the order record
       await api(`/messages/`, {
         method: "POST",
         body: JSON.stringify({
@@ -196,6 +195,7 @@ function CheckoutPanel({ cart, onDone }: { cart: Cart; onDone: () => void }) {
         }),
       });
 
+      // Open WhatsApp after the API call succeeds
       window.open(whatsapp_url, "_blank", "noopener");
       return true;
     },
@@ -225,7 +225,7 @@ function CheckoutPanel({ cart, onDone }: { cart: Cart; onDone: () => void }) {
         <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
           Order total
         </div>
-        <div className="font-display text-3xl text-primary">${total}</div>
+        <div className="font-display text-3xl text-primary">₦{total}</div>
       </div>
 
       <div className="space-y-3">

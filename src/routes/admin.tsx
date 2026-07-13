@@ -158,19 +158,16 @@ function AdminShell({ user }: { user: AuthUser | null }) {
 function StatsRow() {
   const products = useQuery({ queryKey: ["admin-count", "products"], queryFn: () => api<Paginated<Product>>(`/products/?page_size=1`) });
   const brands   = useQuery({ queryKey: ["admin-count", "brands"],   queryFn: () => api<Paginated<Brand> | Brand[]>(`/productsBrand/`) });
-  const orders   = useQuery({ queryKey: ["admin-count", "orders"],   queryFn: () => api<Paginated<AdminOrder> | AdminOrder[]>(`/orders/?page_size=1`), retry: false });
   const messages = useQuery({ queryKey: ["admin-count", "messages"], queryFn: () => api<Paginated<SentCartMessage> | SentCartMessage[]>(`/messages/?page_size=1`), retry: false });
 
   const pc = products.data?.count ?? 0;
   const bc = Array.isArray(brands.data) ? brands.data.length : brands.data?.count ?? 0;
-  const oc = Array.isArray(orders.data) ? orders.data.length : (orders.data as Paginated<AdminOrder> | undefined)?.count ?? 0;
   const mc = Array.isArray(messages.data) ? messages.data.length : (messages.data as Paginated<SentCartMessage> | undefined)?.count ?? 0;
 
   return (
-    <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
       <StatCard label="Products"  value={pc} loading={products.isLoading} />
       <StatCard label="Brands"    value={bc} loading={brands.isLoading} />
-      <StatCard label="Orders"    value={oc} loading={orders.isLoading}   error={orders.isError} />
       <StatCard label="Messages"  value={mc} loading={messages.isLoading} error={messages.isError} />
     </div>
   );
@@ -457,11 +454,11 @@ function ProductsTable() {
                 )}
               </td>
               <td className="px-4 py-2 font-semibold">{p.model_name}</td>
-              <td className="px-4 py-2">{p.brand}</td>
-              <td className="px-4 py-2">{p.category}</td>
+              <td className="px-4 py-2">{p.brand_name ?? p.brand}</td>
+              <td className="px-4 py-2">{p.category_name ?? p.category}</td>
               <td className="px-4 py-2 text-xs">{p.width}/{p.aspect_ratio} R{p.rim_diameter}</td>
-              <td className="px-4 py-2 font-display text-primary">${p.price}</td>
-              <td className="px-4 py-2 text-xs text-muted-foreground">{p.discount_price ? `$${p.discount_price}` : "—"}</td>
+              <td className="px-4 py-2 font-display text-primary">₦{p.price}</td>
+              <td className="px-4 py-2 text-xs text-muted-foreground">{p.discount_price ? `₦${p.discount_price}` : "—"}</td>
               <td className="px-4 py-2"><StockBadge n={p.inventory} /></td>
               <td className="px-4 py-2">
                 <span className={`text-xs font-semibold ${p.is_active !== false ? "text-emerald-500" : "text-muted-foreground"}`}>
@@ -482,7 +479,7 @@ function ProductsTable() {
 
       {creating && (
         <ProductFormModal title="New product" initial={emptyProduct} onClose={() => setCreating(false)}
-          onSubmit={async (data) => { await crud.create.mutateAsync(data); setCreating(false); }} />
+          onSubmit={async (data) => { await crud.create.mutateAsync(data); }} />
       )}
       {editing && (
         <ProductFormModal title={`Edit #${editing.id} — ${editing.model_name}`}
@@ -493,10 +490,11 @@ function ProductsTable() {
             price: String(editing.price), discount_price: String(editing.discount_price ?? ""),
             inventory: String(editing.inventory), is_active: editing.is_active !== false,
             description: editing.description,
-          }}
-          brandName={editing.brand} categoryName={editing.category}
+            id: editing.id,
+          } as ProductFormState & { id: number }}
+          brandName={String(editing.brand)} categoryName={String(editing.category)}
           onClose={() => setEditing(null)}
-          onSubmit={async (data) => { await crud.update.mutateAsync({ id: editing.id, data }); setEditing(null); }} />
+          onSubmit={async (data) => { await crud.update.mutateAsync({ id: editing.id, data }); }} />
       )}
       {imagesFor && (
         <ProductImagesModal product={imagesFor} onClose={() => setImagesFor(null)}
@@ -508,38 +506,145 @@ function ProductsTable() {
 
 // ── Product form modal ────────────────────────────────────────────────────
 
+type PendingImage = { file: File; preview: string; is_primary: boolean };
+
 function ProductFormModal({ title, initial, brandName, categoryName, onClose, onSubmit }: {
   title: string; initial: ProductFormState;
   brandName?: string; categoryName?: string;
   onClose: () => void; onSubmit: (data: Partial<Product>) => Promise<void>;
 }) {
+  const qc = useQueryClient();
+  const fileRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState(initial);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Pending images (local previews — uploaded after product saves)
+  const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
+
+  const isEditing = !!brandName;
+  const productId = isEditing ? (initial as unknown as { id?: number }).id : undefined;
 
   const brands = useQuery({ queryKey: ["brands"], queryFn: () => api<Paginated<Brand> | Brand[]>(`/productsBrand/`) });
   const cats   = useQuery({ queryKey: ["cats"],   queryFn: () => api<Paginated<Category> | Category[]>(`/productsCategories/`) });
   const brandList = Array.isArray(brands.data) ? brands.data : brands.data?.results ?? [];
   const catList   = Array.isArray(cats.data)   ? cats.data   : cats.data?.results   ?? [];
 
-  // Pre-select brand/category by name when editing
+  // Existing images/reviews when editing
+  const imagesQ = useQuery({
+    queryKey: ["product-images", productId],
+    queryFn: () => api<Product>(`/products/${productId}/`),
+    enabled: !!productId,
+  });
+  const reviewsQ = useQuery({
+    queryKey: ["admin-reviews-inline", productId],
+    queryFn: () => api<Review[] | { results: Review[] }>(`/products/${productId}/reviews/`),
+    enabled: !!productId,
+  });
+  const existingImages: ProductImage[] = imagesQ.data?.images ?? [];
+  const existingReviews: Review[] = Array.isArray(reviewsQ.data)
+    ? reviewsQ.data
+    : (reviewsQ.data as { results: Review[] } | undefined)?.results ?? [];
+
+  const deleteImg = useMutation({
+    mutationFn: (imgId: number) => api<void>(`/products/${productId}/images/${imgId}/`, { method: "DELETE" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["product-images", productId] }),
+  });
+  const setPrimaryMut = useMutation({
+    mutationFn: (imgId: number) =>
+      api<ProductImage>(`/products/${productId}/images/${imgId}/`, { method: "PATCH", body: JSON.stringify({ is_primary: true }) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["product-images", productId] }),
+  });
+  const deleteReview = useMutation({
+    mutationFn: (rid: number) => api<void>(`/products/${productId}/reviews/${rid}/`, { method: "DELETE" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-reviews-inline", productId] }),
+  });
+
   const resolvedBrandId    = form.brand_id    || String(brandList.find((b) => b.name === brandName)?.id   ?? "");
   const resolvedCategoryId = form.category_id || String(catList.find((c)  => c.name === categoryName)?.id ?? "");
 
-  const brandOptions:    SelectOption[] = brandList.map((b) => ({ id: b.id, label: b.name, sub: `${b.products_count ?? 0} products` }));
-  const categoryOptions: SelectOption[] = catList.map((c)   => ({ id: c.id, label: c.name, sub: `${c.products_count ?? 0} products` }));
+  // Pre-populate brand/category ids from name when editing (runs once when list loads)
+  useEffect(() => {
+    if (brandName && !form.brand_id && brandList.length > 0) {
+      const found = brandList.find((b) => b.name === brandName);
+      if (found) setForm((f) => ({ ...f, brand_id: String(found.id) }));
+    }
+  }, [brandList, brandName, form.brand_id]);
+
+  useEffect(() => {
+    if (categoryName && !form.category_id && catList.length > 0) {
+      const found = catList.find((c) => c.name === categoryName);
+      if (found) setForm((f) => ({ ...f, category_id: String(found.id) }));
+    }
+  }, [catList, categoryName, form.category_id]);
 
   function set<K extends keyof ProductFormState>(k: K, v: ProductFormState[K]) {
     setForm((f) => ({ ...f, [k]: v }));
   }
 
+  // Pick local image files — show preview immediately, no upload yet
+  function pickImages(files: FileList | null) {
+    if (!files) return;
+    const newImages: PendingImage[] = Array.from(files).map((file, i) => ({
+      file,
+      preview: URL.createObjectURL(file),
+      is_primary: pendingImages.length === 0 && i === 0,
+    }));
+    setPendingImages((prev) => {
+      const merged = [...prev, ...newImages];
+      // Ensure exactly one primary
+      const hasPrimary = merged.some((im) => im.is_primary);
+      if (!hasPrimary && merged.length > 0) merged[0].is_primary = true;
+      return merged;
+    });
+    if (fileRef.current) fileRef.current.value = "";
+  }
+
+  function removePending(idx: number) {
+    setPendingImages((prev) => {
+      const next = prev.filter((_, i) => i !== idx);
+      if (prev[idx].is_primary && next.length > 0) next[0].is_primary = true;
+      return next;
+    });
+  }
+
+  function setPendingPrimary(idx: number) {
+    setPendingImages((prev) => prev.map((im, i) => ({ ...im, is_primary: i === idx })));
+  }
+
+  function addReviewDraft(_e: FormEvent) { /* removed */ }
+  function removePendingReview(_id: string) { /* removed */ }
+
+  async function uploadPendingToProduct(pid: number) {
+    const token = typeof window !== "undefined" ? window.localStorage.getItem("apex.admin.token") : null;
+    const authHeader: Record<string, string> = token ? { Authorization: `JWT ${token}` } : {};
+    const origin = API_URL.replace(/\/api\/?$/, "");
+
+    // Upload images only
+    for (const im of pendingImages) {
+      const fd = new FormData();
+      fd.append("image", im.file);
+      fd.append("is_primary", im.is_primary ? "true" : "false");
+      const res = await fetch(`${origin}/api/products/${pid}/images/`, {
+        method: "POST",
+        headers: authHeader,
+        body: fd,
+      });
+      if (!res.ok) { const t = await res.text(); throw new Error(`Image upload failed: ${res.status} — ${t}`); }
+    }
+  }
+
   async function submit(e: FormEvent) {
     e.preventDefault(); setBusy(true); setError(null);
+    const brandIdNum = Number(form.brand_id || resolvedBrandId);
+    const categoryIdNum = Number(form.category_id || resolvedCategoryId);
+    if (!brandIdNum) { setError("Please select a brand."); setBusy(false); return; }
+    if (!categoryIdNum) { setError("Please select a category."); setBusy(false); return; }
     try {
       await onSubmit({
         model_name: form.model_name,
-        brand: resolvedBrandId as unknown as string,
-        category: resolvedCategoryId as unknown as string,
+        brand: brandIdNum as unknown as string,
+        category: categoryIdNum as unknown as string,
         width: Number(form.width), aspect_ratio: Number(form.aspect_ratio), rim_diameter: Number(form.rim_diameter),
         load_index: Number(form.load_index), speed_rating: form.speed_rating,
         price: form.price,
@@ -548,6 +653,17 @@ function ProductFormModal({ title, initial, brandName, categoryName, onClose, on
         is_active: form.is_active,
         description: form.description,
       } as Partial<Product>);
+      // Upload pending images
+      if (pendingImages.length > 0) {
+        let pid = productId;
+        if (!pid) {
+          const list = await api<Paginated<Product>>(`/products/`, { params: { ordering: "-id", page_size: 1 } });
+          pid = list.results[0]?.id;
+        }
+        if (pid) await uploadPendingToProduct(pid);
+      }
+
+      onClose();
     } catch (err) { setError(err instanceof Error ? err.message : "Save failed"); }
     finally { setBusy(false); }
   }
@@ -555,20 +671,20 @@ function ProductFormModal({ title, initial, brandName, categoryName, onClose, on
   return (
     <Modal title={title} onClose={onClose} wide>
       <form onSubmit={submit} className="space-y-3">
+
+        {/* ── Product fields ── */}
         <Field label="Model name">
           <input className={inputCls} value={form.model_name} onChange={(e) => set("model_name", e.target.value)} required />
         </Field>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Brand">
-            <select className={inputCls} value={resolvedBrandId}
-              onChange={(e) => set("brand_id", e.target.value)} required>
+            <select className={inputCls} value={resolvedBrandId} onChange={(e) => set("brand_id", e.target.value)} required>
               <option value="">— select —</option>
               {brandList.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
             </select>
           </Field>
           <Field label="Category">
-            <select className={inputCls} value={resolvedCategoryId}
-              onChange={(e) => set("category_id", e.target.value)} required>
+            <select className={inputCls} value={resolvedCategoryId} onChange={(e) => set("category_id", e.target.value)} required>
               <option value="">— select —</option>
               {catList.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
@@ -585,20 +701,96 @@ function ProductFormModal({ title, initial, brandName, categoryName, onClose, on
           <Field label="Inventory"><input type="number" min="0" className={inputCls} value={form.inventory} onChange={(e) => set("inventory", e.target.value)} required /></Field>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Price ($)"><input className={inputCls} value={form.price} onChange={(e) => set("price", e.target.value)} required placeholder="0.00" /></Field>
-          <Field label="Discount price ($)"><input className={inputCls} value={form.discount_price} onChange={(e) => set("discount_price", e.target.value)} placeholder="Leave blank if none" /></Field>
+          <Field label="Price (₦)"><input className={inputCls} value={form.price} onChange={(e) => set("price", e.target.value)} required placeholder="0.00" /></Field>
+          <Field label="Discount price (₦)"><input className={inputCls} value={form.discount_price} onChange={(e) => set("discount_price", e.target.value)} placeholder="Leave blank if none" /></Field>
         </div>
         <Field label="Description"><textarea rows={3} className={inputCls} value={form.description} onChange={(e) => set("description", e.target.value)} /></Field>
         <label className="flex cursor-pointer items-center gap-2 text-sm">
           <input type="checkbox" checked={form.is_active} onChange={(e) => set("is_active", e.target.checked)} className="rounded" />
           Active (visible on storefront)
         </label>
+
         {error && <p className="rounded bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
         <div className="flex justify-end gap-2 pt-2">
           <GhostBtn onClick={onClose}>Cancel</GhostBtn>
-          <PrimaryBtn type="submit" disabled={busy}>{busy ? "Saving…" : "Save product"}</PrimaryBtn>
+          <PrimaryBtn type="submit" disabled={busy}>
+            {busy ? "Saving…" : "Save product"}
+          </PrimaryBtn>
         </div>
       </form>
+
+      {/* ── Images inline — independent section, NOT inside the form ── */}
+      {/* Rendered below the product form as a standalone entity (like Django TabularInline) */}
+      <div className="mt-4 border-t border-border pt-4">
+        <div className="mb-2 flex items-center justify-between">
+          <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Images</span>
+          <button type="button" onClick={() => fileRef.current?.click()}
+            className="inline-flex items-center gap-1 rounded border border-border px-2 py-1 text-xs font-semibold hover:border-primary hover:text-primary transition">
+            <Plus className="h-3 w-3" /> Add image
+          </button>
+          <input ref={fileRef} type="file" accept="image/*" multiple className="hidden"
+            onChange={(e) => pickImages(e.target.files)} />
+        </div>
+
+        {/* Existing images (editing only) */}
+        {isEditing && existingImages.length > 0 && (
+          <div className="mb-2 grid grid-cols-4 gap-2 sm:grid-cols-6">
+            {existingImages.map((im) => {
+              const src = mediaUrl(im.image) ?? im.image;
+              return (
+                <div key={im.id} className="group relative">
+                  <img src={src} alt="" className="aspect-square w-full rounded border border-border object-cover" />
+                  {im.is_primary && (
+                    <span className="absolute left-1 top-1 rounded bg-primary px-1 py-0.5 text-[9px] font-bold uppercase text-primary-foreground">Primary</span>
+                  )}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 rounded bg-black/50 opacity-0 transition group-hover:opacity-100">
+                    {!im.is_primary && (
+                      <button type="button" onClick={() => setPrimaryMut.mutate(im.id)}
+                        className="rounded bg-white/20 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-white hover:bg-white/40">
+                        Set primary
+                      </button>
+                    )}
+                    <button type="button" onClick={() => { if (confirmDelete("this image")) deleteImg.mutate(im.id); }}
+                      className="rounded bg-destructive/80 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-white hover:bg-destructive">
+                      <Trash2 className="inline h-2.5 w-2.5" /> Delete
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Pending (local preview) images — queued for upload on save */}
+        {pendingImages.length > 0 && (
+          <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
+            {pendingImages.map((im, idx) => (
+              <div key={idx} className="group relative">
+                <img src={im.preview} alt="" className="aspect-square w-full rounded border-2 border-dashed border-primary/60 object-cover" />
+                {im.is_primary && (
+                  <span className="absolute left-1 top-1 rounded bg-primary px-1 py-0.5 text-[9px] font-bold uppercase text-primary-foreground">Primary</span>
+                )}
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 rounded bg-black/50 opacity-0 transition group-hover:opacity-100">
+                  {!im.is_primary && (
+                    <button type="button" onClick={() => setPendingPrimary(idx)}
+                      className="rounded bg-white/20 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-white hover:bg-white/40">
+                      Set primary
+                    </button>
+                  )}
+                  <button type="button" onClick={() => removePending(idx)}
+                    className="rounded bg-destructive/80 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-white hover:bg-destructive">
+                    <X className="inline h-2.5 w-2.5" /> Remove
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {pendingImages.length === 0 && (!isEditing || existingImages.length === 0) && (
+          <p className="text-xs text-muted-foreground">No images — click "Add image" to pick files.</p>
+        )}
+      </div>
     </Modal>
   );
 }
@@ -640,7 +832,7 @@ function ProductImagesModal({ product, onClose, onDone }: { product: Product; on
         const origin = API_URL.replace(/\/api\/?$/, "");
         const res = await fetch(`${origin}/api/products/${product.id}/images/`, {
           method: "POST",
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          headers: token ? { Authorization: `JWT ${token}` } : {},
           body: fd,
         });
         if (!res.ok) { const t = await res.text(); throw new Error(`${res.status} — ${t}`); }
@@ -928,7 +1120,7 @@ function OrdersTable() {
                     {items.length} {isOpen ? "▲" : "▼"}
                   </button>
                 </td>
-                <td className="px-4 py-3 font-display text-primary">${total.toFixed(2)}</td>
+                <td className="px-4 py-3 font-display text-primary">₦{total.toFixed(2)}</td>
                 <td className="px-4 py-3 text-xs text-muted-foreground">{o.placed_at ? new Date(o.placed_at).toLocaleString() : "—"}</td>
                 <td className="px-4 py-3">
                   <GhostBtn danger onClick={() => { if (confirmDelete(`order #${o.id}`)) crud.remove.mutate(o.id); }}><Trash2 className="inline h-3 w-3" /></GhostBtn>
@@ -946,8 +1138,8 @@ function OrdersTable() {
                           <tr key={it.id}>
                             <td className="py-0.5">{it.product?.model_name ?? `#${it.id}`}</td>
                             <td className="py-0.5 text-right">{it.quantity}</td>
-                            <td className="py-0.5 text-right">${Number(it.unit_price).toFixed(2)}</td>
-                            <td className="py-0.5 text-right font-semibold">${(Number(it.unit_price) * it.quantity).toFixed(2)}</td>
+                            <td className="py-0.5 text-right">₦{Number(it.unit_price).toFixed(2)}</td>
+                            <td className="py-0.5 text-right font-semibold">₦{(Number(it.unit_price) * it.quantity).toFixed(2)}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -978,7 +1170,7 @@ function CartsTable() {
         <tr key={c.id} className="border-t border-border">
           <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{c.id}</td>
           <td className="px-4 py-3">{c.items?.length ?? 0}</td>
-          <td className="px-4 py-3 font-display text-primary">${Number(c.total_price ?? 0).toFixed(2)}</td>
+          <td className="px-4 py-3 font-display text-primary">₦{Number(c.total_price ?? 0).toFixed(2)}</td>
           <td className="px-4 py-3">
             <div className="flex justify-end">
               <GhostBtn danger onClick={() => { if (confirmDelete(`cart ${c.id}`)) crud.remove.mutate(c.id); }}><Trash2 className="inline h-3 w-3" /></GhostBtn>
@@ -1015,7 +1207,7 @@ function MessagesTable() {
               <div className="text-xs text-muted-foreground">{m.contact_phone} · {new Date(m.created_at).toLocaleString()}</div>
             </div>
             <div className="flex items-center gap-3">
-              <div className="font-display text-xl text-primary">${Number(m.total_price).toFixed(2)}</div>
+              <div className="font-display text-xl text-primary">₦{Number(m.total_price).toFixed(2)}</div>
               <GhostBtn danger onClick={() => { if (confirmDelete(`message from "${m.contact_name}"`)) remove.mutate(m.id); }}><Trash2 className="inline h-3 w-3" /></GhostBtn>
             </div>
           </div>

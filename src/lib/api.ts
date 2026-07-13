@@ -1,8 +1,19 @@
-export const API_URL =
-  (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, "") ||
+// ---------------------------------------------------------------------------
+// API_URL resolution
+//
+// Priority:
+//   1. VITE_API_URL  — set in .env (dev) or .env.production (prod)
+//   2. Fallback to localhost for local dev convenience
+//
+// IMPORTANT for production:
+//   Set VITE_API_URL=https://your-backend-domain.com/api in .env.production
+//   before running `npm run build`.
+// ---------------------------------------------------------------------------
+export const API_URL: string =
+  ((import.meta.env.VITE_API_URL as string | undefined) ?? "").replace(/\/$/, "") ||
   "http://localhost:8000/api";
 
-export const WHATSAPP_NUMBER =
+export const WHATSAPP_NUMBER: string =
   (import.meta.env.VITE_WHATSAPP_NUMBER as string | undefined) || "1234567890";
 
 type FetchOpts = RequestInit & { params?: Record<string, string | number | undefined | null> };
@@ -10,7 +21,7 @@ type FetchOpts = RequestInit & { params?: Record<string, string | number | undef
 export async function api<T = unknown>(path: string, opts: FetchOpts = {}): Promise<T> {
   const { params, headers, ...rest } = opts;
 
-  // Build absolute URL — API_URL is already absolute (e.g. http://localhost:8000/api)
+  // Build URL — API_URL is always absolute (http/https)
   let urlStr = API_URL + path;
   if (params) {
     const qs = new URLSearchParams();
@@ -21,14 +32,14 @@ export async function api<T = unknown>(path: string, opts: FetchOpts = {}): Prom
     if (q) urlStr += (urlStr.includes("?") ? "&" : "?") + q;
   }
 
-  // Attach JWT Bearer auth if present
+  // Attach JWT Bearer token if present (browser only)
   let authHeader: Record<string, string> = {};
   try {
     const token =
       typeof window !== "undefined" ? window.localStorage.getItem("apex.admin.token") : null;
-    if (token) authHeader = { Authorization: `Bearer ${token}` };
+    if (token) authHeader = { Authorization: `JWT ${token}` };
   } catch {
-    /* ignore */
+    /* ignore — SSR or storage blocked */
   }
 
   const res = await fetch(urlStr, {
@@ -51,33 +62,43 @@ export async function api<T = unknown>(path: string, opts: FetchOpts = {}): Prom
     }
     throw new Error(msg);
   }
+
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
 }
 
-// --- Types matching the Django serializers ---
+// ---------------------------------------------------------------------------
+// Types matching the Django serializers
+// ---------------------------------------------------------------------------
 
 export type ProductImage = {
   id: number;
-  image: string;       // may be a relative path like /media/store/images/foo.jpg
+  image: string; // may be a relative path like /media/store/images/foo.jpg
   is_primary: boolean;
 };
 
-/** Resolve a potentially-relative media URL to a full URL pointing at the Django server */
+/**
+ * Resolve a media path to a full absolute URL.
+ * Django returns image paths like "/media/store/images/foo.jpg".
+ * We prepend the API origin so images load correctly in both dev and prod.
+ */
 export function mediaUrl(path: string | null | undefined): string | null {
   if (!path) return null;
+  // Already absolute — return as-is
   if (path.startsWith("http://") || path.startsWith("https://") || path.startsWith("//")) {
     return path;
   }
-  // path is relative — prepend the Django API origin
+  // Strip /api suffix to get the Django origin (e.g. https://api.domain.com)
   const origin = API_URL.replace(/\/api\/?$/, "").replace(/\/$/, "");
   return `${origin}${path.startsWith("/") ? "" : "/"}${path}`;
 }
 
 export type Product = {
   id: number;
-  brand: string;       // StringRelatedField — returns brand name
-  category: string;    // StringRelatedField — returns category name
+  brand: number | string;    // PK integer for writes; name string for display
+  category: number | string;
+  brand_name?: string;       // read-only display name from serializer
+  category_name?: string;
   model_name: string;
   width: number;
   aspect_ratio: number;
