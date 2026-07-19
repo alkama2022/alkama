@@ -7,25 +7,15 @@ import { addToCart } from "@/lib/cart";
 import { ProductDetailDrawer } from "@/components/ProductDetailDrawer";
 import { ArrowRight, Check, Eye, ShieldCheck, ShoppingCart, Truck, Wrench } from "lucide-react";
 
+import { useProducts, useBrands } from "@/hooks/queries";
+
 export const Route = createFileRoute("/")({
   component: Home,
 });
 
 function Home() {
-  const featured = useQuery({
-    queryKey: ["featured-products"],
-    queryFn: () =>
-      api<Paginated<Product> | Product[]>(`/products/`, {
-        params: {
-          ordering: "-id",
-          page_size: 3,
-        },
-      }),
-  });
-  const brands = useQuery({
-    queryKey: ["home-brands"],
-    queryFn: () => api<Paginated<Brand> | Brand[]>(`/productsBrand/`),
-  });
+  const featured = useProducts({ ordering: "-id", page_size: 3 });
+  const brands = useBrands();
 
   const products = (
     Array.isArray(featured.data) ? featured.data : (featured.data?.results ?? [])

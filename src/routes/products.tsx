@@ -41,6 +41,8 @@ export const Route = createFileRoute("/products")({
   }),
 });
 
+import { useProducts, useBrands, useCategories } from "@/hooks/queries";
+
 function ProductsPage() {
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
@@ -48,27 +50,15 @@ function ProductsPage() {
   const setSearch = (patch: Partial<ProductsSearch>) =>
     navigate({ search: (prev: ProductsSearch) => ({ ...prev, ...patch }) });
 
-  const brands = useQuery({
-    queryKey: ["brands"],
-    queryFn: () => api<Paginated<Brand> | Brand[]>(`/productsBrand/`),
-  });
-  const cats = useQuery({
-    queryKey: ["cats"],
-    queryFn: () => api<Paginated<Category> | Category[]>(`/productsCategories/`),
-  });
-  const products = useQuery({
-    queryKey: ["products", search],
-    queryFn: () =>
-      api<Paginated<Product> | Product[]>(`/products/`, {
-        params: {
-          search: search.search,
-          brand: search.brand,
-          category: search.category,
-          ordering: search.ordering,
-          page: search.page ?? 1,
-          page_size: 24,
-        },
-      }),
+  const brands = useBrands();
+  const cats = useCategories();
+  const products = useProducts({
+    search: search.search,
+    brand: search.brand,
+    category: search.category,
+    ordering: search.ordering,
+    page: search.page ?? 1,
+    page_size: 24,
   });
 
   const brandList = Array.isArray(brands.data) ? brands.data : (brands.data?.results ?? []);

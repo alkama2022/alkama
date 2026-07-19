@@ -6,8 +6,9 @@ export const getRouter = () => {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
-        staleTime: 0, // always re-fetch in background when cache is used
-        refetchOnWindowFocus: true, // re-fetch when the user switches back to this tab
+        staleTime: 1000 * 60 * 5, // 5 minutes cache before re-fetching
+        refetchOnWindowFocus: false, // prevent duplicate requests when switching tabs
+        retry: 1, // only retry once on failure
       },
     },
   });

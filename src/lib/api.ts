@@ -16,55 +16,20 @@ export const API_URL: string =
 export const WHATSAPP_NUMBER: string =
   (import.meta.env.VITE_WHATSAPP_NUMBER as string | undefined) || "1234567890";
 
+import { apiFetch } from "@/api/axios";
+
 type FetchOpts = RequestInit & { params?: Record<string, string | number | undefined | null> };
 
 export async function api<T = unknown>(path: string, opts: FetchOpts = {}): Promise<T> {
-  const { params, headers, ...rest } = opts;
-
-  // Build URL — API_URL is always absolute (http/https)
-  let urlStr = API_URL + path;
-  if (params) {
-    const qs = new URLSearchParams();
-    Object.entries(params).forEach(([k, v]) => {
-      if (v !== undefined && v !== null && v !== "") qs.set(k, String(v));
-    });
-    const q = qs.toString();
-    if (q) urlStr += (urlStr.includes("?") ? "&" : "?") + q;
-  }
-
-  // Attach JWT Bearer token if present (browser only)
-  let authHeader: Record<string, string> = {};
-  try {
-    const token =
-      typeof window !== "undefined" ? window.localStorage.getItem("khal.admin.token") : null;
-    if (token) authHeader = { Authorization: `Bearer ${token}` };
-  } catch {
-    /* ignore — SSR or storage blocked */
-  }
-
-  const res = await fetch(urlStr, {
+  const { params, headers, body, method, ...rest } = opts;
+  
+  return apiFetch<T>(path, {
+    method: method || "GET",
+    params,
+    headers,
+    body,
     ...rest,
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-      ...authHeader,
-      ...(headers as Record<string, string> | undefined),
-    },
   });
-
-  if (!res.ok) {
-    let msg = `${res.status} ${res.statusText}`;
-    try {
-      const body = await res.text();
-      if (body) msg += ` — ${body}`;
-    } catch {
-      /* ignore */
-    }
-    throw new Error(msg);
-  }
-
-  if (res.status === 204) return undefined as T;
-  return (await res.json()) as T;
 }
 
 // ---------------------------------------------------------------------------

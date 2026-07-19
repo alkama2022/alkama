@@ -13,8 +13,8 @@ import { ShoppingCart, Menu, X } from "lucide-react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { getStoredCartId } from "../lib/cart";
-import { api, type Cart } from "../lib/api";
 import { Toaster } from "@/components/ui/sonner";
+import { useCart } from "@/hooks/queries";
 
 function NotFoundComponent() {
   return (
@@ -115,29 +115,9 @@ function RootShell({ children }: { children: ReactNode }) {
 }
 
 function Header() {
-  const [count, setCount] = useState(0);
+  const { data: cart } = useCart(getStoredCartId());
+  const count = cart?.items.reduce((s, i) => s + i.quantity, 0) ?? 0;
   const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      const id = getStoredCartId();
-      if (!id) return;
-      try {
-        const cart = await api<Cart>(`/cart/${id}/`);
-        if (!cancelled) setCount(cart.items.reduce((s, i) => s + i.quantity, 0));
-      } catch {
-        /* ignore */
-      }
-    }
-    load();
-    const handler = () => load();
-    window.addEventListener("cart:updated", handler);
-    return () => {
-      cancelled = true;
-      window.removeEventListener("cart:updated", handler);
-    };
-  }, []);
 
   const navLink =
     "text-sm font-semibold uppercase tracking-wider text-foreground/80 hover:text-primary transition";

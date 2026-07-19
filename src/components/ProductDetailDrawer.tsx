@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { api, mediaUrl, type Product, type ProductImage, type Review } from "@/lib/api";
+import { useProductDetail, useProductReviews, queryKeys } from "@/hooks/queries";
 import { addToCart } from "@/lib/cart";
 import {
   Check,
@@ -125,15 +126,8 @@ function DrawerContent({ productId, onClose }: { productId: number; onClose: () 
   const [justAdded, setJustAdded] = useState(false);
   const [cartCount, setCartCount] = useState(0);
 
-  const product = useQuery({
-    queryKey: ["product", String(productId)],
-    queryFn: () => api<Product>(`/products/${productId}/`),
-  });
-
-  const reviews = useQuery({
-    queryKey: ["reviews", String(productId)],
-    queryFn: () => api<Review[] | { results: Review[] }>(`/products/${productId}/reviews/`),
-  });
+  const product = useProductDetail(productId);
+  const reviews = useProductReviews(productId);
 
   const addMutation = useMutation({
     mutationFn: () => addToCart(productId, qty),
@@ -158,7 +152,7 @@ function DrawerContent({ productId, onClose }: { productId: number; onClose: () 
       }),
     onSuccess: () => {
       setReviewForm({ name: "", description: "" });
-      qc.invalidateQueries({ queryKey: ["reviews", String(productId)] });
+      qc.invalidateQueries({ queryKey: queryKeys.products.reviews(productId) });
       toast.success("Review posted!");
     },
     onError: (e: Error) => toast.error(e.message),
@@ -232,8 +226,7 @@ function DrawerContent({ productId, onClose }: { productId: number; onClose: () 
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             <SpecTile label="Tyre size" value={p.tire_size} highlight />
             <SpecTile label="Load index" value={`${p.load_index} kg`} />
-            <SpecTile label="Speed rating" value={`${p.speed_rating} km/h `} />
-            {/*— ${drawerSpeedLabel(p.speed_rating)}*/}
+            <SpecTile label="Speed rating" value={`${p.speed_rating} — ${drawerSpeedLabel(p.speed_rating)}`} />
           </div>
         </div>
 

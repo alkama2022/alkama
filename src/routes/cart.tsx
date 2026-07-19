@@ -3,7 +3,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 import { api, mediaUrl, WHATSAPP_NUMBER, type Cart } from "@/lib/api";
-import { clearStoredCartId, ensureCart, getStoredCartId } from "@/lib/cart";
+import { clearStoredCartId, getStoredCartId } from "@/lib/cart";
+import { useCart } from "@/hooks/queries";
 import { Minus, Plus, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/cart")({
@@ -14,11 +15,8 @@ export const Route = createFileRoute("/cart")({
 function CartPage() {
   const qc = useQueryClient();
 
-  const cart = useQuery({
-    queryKey: ["cart"],
-    queryFn: async () => ensureCart(),
-    enabled: typeof window !== "undefined",
-  });
+  const cartId = getStoredCartId();
+  const cart = useCart(cartId);
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["cart"] });
