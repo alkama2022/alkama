@@ -144,9 +144,7 @@ function Header() {
           <Link to="/contact" className={navLink}>
             Contact
           </Link>
-          <Link to="/admin" className={navLink}>
-            Admin
-          </Link>
+
         </nav>
         <div className="flex items-center gap-2">
           <Link
@@ -186,9 +184,7 @@ function Header() {
             <Link to="/contact" className={navLink} onClick={() => setOpen(false)}>
               Contact
             </Link>
-            <Link to="/admin" className={navLink} onClick={() => setOpen(false)}>
-              Admin
-            </Link>
+
           </div>
         </div>
       )}

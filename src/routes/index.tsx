@@ -40,9 +40,6 @@ function Home() {
         <div className="relative mx-auto grid max-w-7xl gap-10 px-4 py-20 sm:px-6 md:grid-cols-2 md:py-28">
           {/* Left: copy */}
           <div className="flex flex-col justify-center">
-            <span className="mb-4 inline-flex w-fit items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-primary">
-              Season Launch · 2026
-            </span>
             <h1 className="font-display text-5xl uppercase leading-none tracking-wide sm:text-7xl">
               Grip the road.
               <br />
@@ -284,11 +281,10 @@ export function ProductCard({ product }: { product: Product }) {
               type="button"
               disabled={outOfStock || add.isPending}
               onClick={() => add.mutate()}
-              className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold uppercase tracking-widest transition disabled:opacity-50 ${
-                justAdded
+              className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold uppercase tracking-widest transition disabled:opacity-50 ${justAdded
                   ? "bg-green-600 text-white"
                   : "bg-primary text-primary-foreground hover:brightness-110"
-              }`}
+                }`}
             >
               {justAdded ? (
                 <>
