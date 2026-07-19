@@ -73,7 +73,14 @@ function ProductsPage() {
 
   const brandList = Array.isArray(brands.data) ? brands.data : (brands.data?.results ?? []);
   const catList = Array.isArray(cats.data) ? cats.data : (cats.data?.results ?? []);
-  const results = Array.isArray(products.data) ? products.data : (products.data?.results ?? []);
+  
+  const allResults = Array.isArray(products.data) ? products.data : (products.data?.results ?? []);
+  const currentPage = search.page ?? 1;
+  const pageSize = 24;
+  
+  const results = Array.isArray(products.data) 
+    ? allResults.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+    : allResults;
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
@@ -173,10 +180,8 @@ function ProductsPage() {
           </div>
 
           {(() => {
-            const count = Array.isArray(products.data) ? 0 : (products.data?.count ?? 0);
-            const pageSize = 24;
+            const count = Array.isArray(products.data) ? products.data.length : (products.data?.count ?? 0);
             const totalPages = Math.ceil(count / pageSize);
-            const currentPage = search.page ?? 1;
 
             if (totalPages <= 1) return null;
 

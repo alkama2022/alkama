@@ -18,7 +18,7 @@ function Home() {
       api<Paginated<Product> | Product[]>(`/products/`, {
         params: {
           ordering: "-id",
-          page_size: 6,
+          page_size: 3,
         },
       }),
   });
@@ -29,7 +29,7 @@ function Home() {
 
   const products = (
     Array.isArray(featured.data) ? featured.data : (featured.data?.results ?? [])
-  ).slice(0, 6);
+  ).slice(0, 3);
   const brandList = Array.isArray(brands.data) ? brands.data : (brands.data?.results ?? []);
 
   return (
@@ -140,7 +140,7 @@ function Home() {
         </div>
         <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {featured.isLoading &&
-            Array.from({ length: 6 }).map((_, i) => (
+            Array.from({ length: 3 }).map((_, i) => (
               <div key={i} className="h-72 animate-pulse rounded-lg bg-surface" />
             ))}
           {products.map((p) => (
