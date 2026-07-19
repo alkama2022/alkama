@@ -8,7 +8,7 @@ import { Minus, Plus, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/cart")({
   component: CartPage,
-  head: () => ({ meta: [{ title: "Your Cart — Apex Tyres" }] }),
+  head: () => ({ meta: [{ title: "Your Cart — Khal Tyres Company Limited" }] }),
 });
 
 function CartPage() {
@@ -17,6 +17,7 @@ function CartPage() {
   const cart = useQuery({
     queryKey: ["cart"],
     queryFn: async () => ensureCart(),
+    enabled: typeof window !== "undefined",
   });
 
   const invalidate = () => {
@@ -82,17 +83,24 @@ function CartPage() {
                   params={{ id: String(it.product.id) }}
                   className="flex-shrink-0"
                 >
-                  {it.product.images?.[0] ? (
-                    <img
-                      src={mediaUrl(it.product.images[0].image) ?? it.product.images[0].image}
-                      alt={it.product.model_name}
-                      className="h-20 w-20 rounded-md border border-border object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-20 w-20 items-center justify-center rounded-md border border-border bg-surface">
-                      <div className="h-12 w-12 rounded-full border-4 border-foreground/40" />
-                    </div>
-                  )}
+                  {(() => {
+                    const imgSrc = it.product.images?.[0]
+                      ? (mediaUrl(it.product.images[0].image) ?? it.product.images[0].image)
+                      : it.product.image
+                        ? (mediaUrl(it.product.image) ?? it.product.image)
+                        : null;
+                    return imgSrc ? (
+                      <img
+                        src={imgSrc}
+                        alt={it.product.model_name}
+                        className="h-20 w-20 rounded-md border border-border object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-20 w-20 items-center justify-center rounded-md border border-border bg-surface">
+                        <div className="h-12 w-12 rounded-full border-4 border-foreground/40" />
+                      </div>
+                    );
+                  })()}
                 </Link>
                 <div className="flex-1">
                   <Link
@@ -102,7 +110,11 @@ function CartPage() {
                   >
                     {it.product.model_name}
                   </Link>
-                  <div className="text-sm text-muted-foreground">₦{it.product.price} each</div>
+                  <div className="text-sm text-muted-foreground">
+                    {it.product.brand && <span>{it.product.brand} · </span>}
+                    {it.product.tire_size && <span>{it.product.tire_size} · </span>}₦
+                    {it.product.price} each
+                  </div>
                 </div>
                 <div className="inline-flex items-center rounded-md border border-border">
                   <button
@@ -137,10 +149,15 @@ function CartPage() {
             ))}
           </div>
 
-          {data && <CheckoutPanel cart={data} onDone={() => {
-            clearStoredCartId();
-            invalidate();
-          }} />}
+          {data && (
+            <CheckoutPanel
+              cart={data}
+              onDone={() => {
+                clearStoredCartId();
+                invalidate();
+              }}
+            />
+          )}
         </div>
       )}
     </div>
@@ -155,13 +172,19 @@ function CheckoutPanel({ cart, onDone }: { cart: Cart; onDone: () => void }) {
       const items_snapshot = cart.items.map((i) => ({
         product_id: i.product.id,
         model_name: i.product.model_name,
+        brand: i.product.brand ?? "",
+        tire_size: i.product.tire_size ?? "",
         price: i.product.price,
         quantity: i.quantity,
         line_total: Number(i.total_price),
       }));
       const total = Number(cart.total_price);
       const lines = cart.items
-        .map((i) => `• ${i.product.model_name} × ${i.quantity} — ₦${Number(i.total_price).toFixed(2)}`)
+        .map((i) => {
+          const brand = i.product.brand ? `${i.product.brand} ` : "";
+          const size = i.product.tire_size ? ` (${i.product.tire_size})` : "";
+          return `• ${brand}${i.product.model_name}${size} × ${i.quantity} — ₦${Number(i.total_price).toFixed(2)}`;
+        })
         .join("\n");
       const message_text = [
         `New order request from ${form.name}`,

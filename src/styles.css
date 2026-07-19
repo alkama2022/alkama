@@ -47,7 +47,7 @@
   --popover: oklch(0.205 0.006 240);
   --popover-foreground: oklch(0.985 0 0);
 
-  --primary: oklch(0.63 0.235 25);       /* racing red #ff3b30-ish */
+  --primary: oklch(0.63 0.235 25); /* racing red #ff3b30-ish */
   --primary-foreground: oklch(0.99 0 0);
 
   --secondary: oklch(0.26 0.008 240);
@@ -76,7 +76,10 @@
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
   }
-  h1, h2, h3, .font-display {
+  h1,
+  h2,
+  h3,
+  .font-display {
     font-family: var(--font-display);
     letter-spacing: 0.01em;
   }

@@ -8,10 +8,12 @@ export function getStoredCartId(): string | null {
 }
 
 export function setStoredCartId(id: string) {
+  if (typeof window === "undefined") return;
   window.localStorage.setItem(CART_KEY, id);
 }
 
 export function clearStoredCartId() {
+  if (typeof window === "undefined") return;
   window.localStorage.removeItem(CART_KEY);
 }
 

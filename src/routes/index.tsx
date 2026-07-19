@@ -14,23 +14,41 @@ export const Route = createFileRoute("/")({
 function Home() {
   const featured = useQuery({
     queryKey: ["featured-products"],
-    queryFn: () => api<Paginated<Product> | Product[]>(`/products/?ordering=-id`),
+    queryFn: () =>
+      api<Paginated<Product> | Product[]>(`/products/`, {
+        params: {
+          ordering: "-id",
+          page_size: 6,
+        },
+      }),
   });
   const brands = useQuery({
     queryKey: ["home-brands"],
     queryFn: () => api<Paginated<Brand> | Brand[]>(`/productsBrand/`),
   });
 
-  const products =
-    (Array.isArray(featured.data) ? featured.data : featured.data?.results ?? []).slice(0, 6);
-  const brandList = Array.isArray(brands.data) ? brands.data : brands.data?.results ?? [];
+  const products = (
+    Array.isArray(featured.data) ? featured.data : (featured.data?.results ?? [])
+  ).slice(0, 6);
+  const brandList = Array.isArray(brands.data) ? brands.data : (brands.data?.results ?? []);
 
   return (
     <div>
       {/* Hero */}
       <section className="relative overflow-hidden border-b border-border">
-        <div className="absolute inset-0 diagonal-stripes opacity-40" aria-hidden />
+        {/* Full-bleed background image with dark overlay */}
+        <div className="absolute inset-0">
+          <img
+            src="/hero-tyres.jpg"
+            alt=""
+            className="h-full w-full object-cover object-center"
+            aria-hidden
+          />
+          <div className="absolute inset-0 bg-background/80" />
+        </div>
+
         <div className="relative mx-auto grid max-w-7xl gap-10 px-4 py-20 sm:px-6 md:grid-cols-2 md:py-28">
+          {/* Left: copy */}
           <div className="flex flex-col justify-center">
             <span className="mb-4 inline-flex w-fit items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-primary">
               Season Launch · 2026
@@ -53,19 +71,29 @@ function Home() {
               </Link>
               <Link
                 to="/products"
-                className="inline-flex items-center gap-2 rounded-md border border-border px-6 py-3 text-sm font-semibold uppercase tracking-widest hover:border-primary hover:text-primary transition"
+                className="inline-flex items-center gap-2 rounded-md border border-border bg-background/60 px-6 py-3 text-sm font-semibold uppercase tracking-widest backdrop-blur-sm hover:border-primary hover:text-primary transition"
               >
                 Find my size
               </Link>
             </div>
           </div>
-          <div className="relative flex items-center justify-center">
-            <div className="relative aspect-square w-full max-w-md">
-              <div className="absolute inset-0 rounded-full border-[24px] border-foreground/90" />
-              <div className="absolute inset-8 rounded-full border-[10px] border-primary/80" />
-              <div className="absolute inset-16 rounded-full border-4 border-dashed border-foreground/40" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="font-display text-6xl text-primary">APEX</span>
+
+          {/* Right: photo card */}
+          <div className="relative hidden items-center justify-center md:flex">
+            <div className="relative h-full max-h-[420px] w-full overflow-hidden rounded-2xl border border-border/60 shadow-2xl">
+              <img
+                src="/hero-tyres.jpg"
+                alt="Khal Tyres shop — stacked tyres ready for dispatch"
+                className="h-full w-full object-cover object-center"
+              />
+              {/* shop name badge */}
+              <div className="absolute bottom-4 left-4 rounded-lg bg-background/80 px-4 py-2 backdrop-blur-sm">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                  Your local store
+                </p>
+                <p className="font-display text-lg uppercase text-primary leading-tight">
+                  Khal Tyres Co.
+                </p>
               </div>
             </div>
           </div>
@@ -77,7 +105,11 @@ function Home() {
         <div className="mx-auto grid max-w-7xl gap-6 px-4 py-10 sm:px-6 md:grid-cols-3">
           {[
             { icon: Truck, title: "Fast dispatch", body: "In-stock orders ship same day." },
-            { icon: ShieldCheck, title: "Genuine brands", body: "Only authentic, warrantied tyres." },
+            {
+              icon: ShieldCheck,
+              title: "Genuine brands",
+              body: "Only authentic, warrantied tyres.",
+            },
             { icon: Wrench, title: "Expert fitment", body: "Certified installers in your city." },
           ].map(({ icon: Icon, title, body }) => (
             <div key={title} className="flex items-start gap-4">
@@ -99,14 +131,18 @@ function Home() {
           <h2 className="font-display text-3xl uppercase sm:text-4xl">
             Fresh <span className="text-primary">rubber</span>
           </h2>
-          <Link to="/products" className="text-sm font-semibold uppercase tracking-widest hover:text-primary">
+          <Link
+            to="/products"
+            className="text-sm font-semibold uppercase tracking-widest hover:text-primary"
+          >
             View all →
           </Link>
         </div>
         <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {featured.isLoading && Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-72 animate-pulse rounded-lg bg-surface" />
-          ))}
+          {featured.isLoading &&
+            Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="h-72 animate-pulse rounded-lg bg-surface" />
+            ))}
           {products.map((p) => (
             <ProductCard key={p.id} product={p} />
           ))}
@@ -151,11 +187,8 @@ export function ProductCard({ product }: { product: Product }) {
   const [justAdded, setJustAdded] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  const hasDiscount =
-    product.discount_price != null &&
-    Number(product.discount_price) > 0 &&
-    Number(product.discount_price) < Number(product.price);
-  const displayPrice = hasDiscount ? product.discount_price! : product.price;
+  const hasDiscount = false; // discount_price removed from API
+  const displayPrice = product.price;
 
   const add = useMutation({
     mutationFn: () => addToCart(product.id, qty),
@@ -222,8 +255,7 @@ export function ProductCard({ product }: { product: Product }) {
             {product.model_name}
           </button>
           <div className="mt-1 text-sm text-muted-foreground">
-            {product.width}/{product.aspect_ratio} R{product.rim_diameter} · {product.load_index}
-            {product.speed_rating}
+            {product.tire_size} {/*· {product.load_index}{product.speed_rating} */}
           </div>
 
           {/* Price */}
@@ -269,11 +301,15 @@ export function ProductCard({ product }: { product: Product }) {
               }`}
             >
               {justAdded ? (
-                <><Check className="h-3.5 w-3.5" /> Added</>
+                <>
+                  <Check className="h-3.5 w-3.5" /> Added
+                </>
               ) : add.isPending ? (
                 "Adding…"
               ) : (
-                <><ShoppingCart className="h-3.5 w-3.5" /> Add to cart</>
+                <>
+                  <ShoppingCart className="h-3.5 w-3.5" /> Add to cart
+                </>
               )}
             </button>
           </div>

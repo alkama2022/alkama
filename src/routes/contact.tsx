@@ -5,13 +5,13 @@ import { Phone, Mail, MapPin, MessageCircle, Clock, ArrowRight, CheckCircle } fr
 export const Route = createFileRoute("/contact")({
   head: () => ({
     meta: [
-      { title: "Contact Us — Apex Tyres" },
+      { title: "Contact Us — Khal Tyres Company Limited" },
       {
         name: "description",
         content:
-          "Get in touch with Apex Tyres. Call CEO Ibrahim Tahir on 0803 936 6958, WhatsApp us, or visit one of our 4 branches.",
+          "Get in touch with Khal Tyres Company Limited. Call CEO Ibrahim Tahir on 0803 936 6958, WhatsApp us, or visit one of our 4 branches.",
       },
-      { property: "og:title", content: "Contact Us — Apex Tyres" },
+      { property: "og:title", content: "Contact Us — Khal Tyres Company Limited" },
       {
         property: "og:description",
         content:
@@ -23,9 +23,9 @@ export const Route = createFileRoute("/contact")({
   component: ContactPage,
 });
 
-const phone = "0803 936 6958";
+const phone = "07034883127";
 const whatsappNumber = "2348039366958";
-const email = "info@apextyres.com";
+const email = "ibrahimtahir3936@gmail.com";
 
 const contactMethods = [
   {
@@ -33,7 +33,7 @@ const contactMethods = [
     label: "Call us",
     value: phone,
     href: "tel:08039366958",
-    note: "Mon – Sat, 8am – 6pm",
+    note: "Mon – Sun, 8am – 8pm",
   },
   {
     icon: MessageCircle,
@@ -52,10 +52,22 @@ const contactMethods = [
 ];
 
 const branches = [
-  { name: "Downtown Flagship", address: "123 Main Street, City Centre" },
-  { name: "Westside Fitment Bay", address: "456 West Avenue, Industrial Park" },
-  { name: "Northside Express", address: "789 North Road, Motorway Junction" },
-  { name: "Eastside Warehouse", address: "321 East Boulevard, Logistics Zone" },
+  {
+    name: "KHALTYRES COMPANY LIMITED - HOTORO",
+    address: "Hotoro danmarke, sarina house. Phone: +2349137899326",
+  },
+  {
+    name: "KHALTYRES COMPANY LIMITED - YANKABA",
+    address: "Yankaba market, opposite keystone bank. Phone: +2349042316272",
+  },
+  {
+    name: "KHALTYRES COMPANY LIMITED - U/UKU",
+    address: "Unguwa uku bus station, near police outpost. Phone: +2348131273788",
+  },
+  {
+    name: "KHALTYRES COMPANY LIMITED - FARM CENTER",
+    address: "Phone market, farm center, near tecno plaza. Phone: Nil",
+  },
 ];
 
 function ContactPage() {
@@ -65,7 +77,7 @@ function ContactPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const text = encodeURIComponent(
-      `Hi Apex Tyres,\n\nName: ${form.name}\nEmail: ${form.email}\nPhone: ${form.phone}\n\nMessage:\n${form.message}`
+      `Hi Khal Tyres Company Limited,\n\nName: ${form.name}\nEmail: ${form.email}\nPhone: ${form.phone}\n\nMessage:\n${form.message}`,
     );
     window.open(`https://wa.me/${whatsappNumber}?text=${text}`, "_blank");
     setSubmitted(true);
@@ -86,8 +98,8 @@ function ContactPage() {
             </h1>
             <p className="mt-6 max-w-2xl text-lg text-muted-foreground">
               Have a question about fitment, stock or pricing? Reach out by phone on{" "}
-              <strong className="text-foreground">{phone}</strong>, WhatsApp, or visit one of our
-              4 branches.
+              <strong className="text-foreground">{phone}</strong>, WhatsApp, or visit one of our 4
+              branches.
             </p>
           </div>
         </div>
@@ -97,7 +109,7 @@ function ContactPage() {
         <div className="grid gap-12 lg:grid-cols-2">
           {/* Contact info */}
           <div className="space-y-10">
-            <div className="grid gap-6 sm:grid-cols-2">
+            <div className="grid gap-6 sm:grid-cols-3">
               {contactMethods.map(({ icon: Icon, label, value, href, note }) => (
                 <a
                   key={label}
@@ -114,7 +126,7 @@ function ContactPage() {
                       <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                         {label}
                       </div>
-                      <div className="mt-1 font-semibold text-foreground group-hover:text-primary transition">
+                      <div className="mt-1 font-semibold text-foreground group-hover:text-primary transition break-all">
                         {value}
                       </div>
                       <div className="mt-1 text-xs text-muted-foreground">{note}</div>
@@ -145,10 +157,31 @@ function ContactPage() {
                 <div className="font-semibold uppercase tracking-wide">Opening hours</div>
               </div>
               <ul className="mt-3 space-y-1 text-sm text-muted-foreground">
-                <li className="flex justify-between"><span>Monday – Friday</span><span>8:00 AM – 6:00 PM</span></li>
-                <li className="flex justify-between"><span>Saturday</span><span>8:00 AM – 4:00 PM</span></li>
-                <li className="flex justify-between"><span>Sunday</span><span>Closed</span></li>
+                <li className="flex justify-between">
+                  <span>Monday – Friday</span>
+                  <span>8:00 AM – 8:00 PM</span>
+                </li>
+                <li className="flex justify-between">
+                  <span>Saturday</span>
+                  <span>8:00 AM – 8:00 PM</span>
+                </li>
+                <li className="flex justify-between">
+                  <span>Sunday</span>
+                  <span>8:00 AM – 8:00 PM</span>
+                </li>
               </ul>
+              <p className="mt-4 text-sm font-semibold uppercase tracking-wide text-primary">
+                We are always available during the above hours.
+              </p>
+              <p className="mt-4 text-sm font-semibold uppercase tracking-wide text-green-600">
+                We are always available during the above hours.
+              </p>
+              <p className="mt-4 text-sm font-semibold uppercase tracking-wide text-yellow-600">
+                We are always available during the above hours.
+              </p>
+              <p className="mt-4 text-sm font-semibold uppercase tracking-wide text-yellow-500">
+                We are always available during the above hours.
+              </p>
             </div>
           </div>
 

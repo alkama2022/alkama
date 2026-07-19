@@ -5,17 +5,17 @@ import { Users, MapPin, Award, UserCircle, Phone, ShieldCheck, Truck, Wrench } f
 export const Route = createFileRoute("/about")({
   head: () => ({
     meta: [
-      { title: "About Us — Apex Tyres" },
+      { title: "About Us — Khal Tyres Company Limited" },
       {
         name: "description",
         content:
-          "Apex Tyres is led by CEO Ibrahim Tahir. We have 30+ employees and 4 branches supplying premium tyres, wheels and fitment services.",
+          "Khal Tyres Company Limited is led by CEO Ibrahim Tahir. We have 30+ employees and 4 branches supplying premium tyres, wheels and fitment services.",
       },
-      { property: "og:title", content: "About Us — Apex Tyres" },
+      { property: "og:title", content: "About Us — Khal Tyres Company Limited" },
       {
         property: "og:description",
         content:
-          "Apex Tyres is led by CEO Ibrahim Tahir. We have 30+ employees and 4 branches supplying premium tyres, wheels and fitment services.",
+          "Khal Tyres Company Limited is led by CEO Ibrahim Tahir. We have 30+ employees and 4 branches supplying premium tyres, wheels and fitment services.",
       },
       { property: "og:type", content: "website" },
     ],
@@ -26,7 +26,7 @@ export const Route = createFileRoute("/about")({
 const stats = [
   { label: "Employees", value: "30+", icon: Users },
   { label: "Branches", value: "4", icon: MapPin },
-  { label: "Years of experience", value: "15+", icon: Award },
+  { label: "Years of experience", value: "25+", icon: Award },
 ];
 
 const values = [
@@ -62,16 +62,16 @@ function AboutPage() {
               Built for the <span className="text-primary">road ahead.</span>
             </h1>
             <p className="mt-6 max-w-2xl text-lg text-muted-foreground">
-              Apex Tyres is a locally owned automotive supplier led by CEO Ibrahim Tahir. We
-              specialise in premium tyres, alloy wheels, wheel balancing and alignment. With a
-              team of over 30 professionals across 4 branches, we have grown into a trusted name
-              for daily drivers, fleets and performance enthusiasts.
+              Khal Tyres Company Limited is a locally owned automotive supplier led by CEO Ibrahim
+              Tahir. We specialise in premium tyres, alloy wheels, wheel balancing and alignment.
+              With a team of over 30 professionals across 4 branches, we have grown into a trusted
+              name for daily drivers, fleets and performance enthusiasts.
             </p>
           </div>
         </div>
       </section>
 
-      {/* Leadership */}
+      {/* Leadership 
       <section className="border-b border-border bg-surface">
         <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
           <div className="flex flex-col items-start gap-6 sm:flex-row sm:items-center">
@@ -96,7 +96,7 @@ function AboutPage() {
           </div>
         </div>
       </section>
-
+      */}
       {/* Stats */}
       <section className="border-b border-border bg-background">
         <div className="mx-auto grid max-w-7xl gap-6 px-4 py-12 sm:px-6 sm:grid-cols-3">
@@ -119,7 +119,7 @@ function AboutPage() {
       {/* Values */}
       <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6">
         <h2 className="font-display text-3xl uppercase sm:text-4xl">
-          Why drivers choose <span className="text-primary">Apex</span>
+          Why drivers choose <span className="text-primary">Khal Tyres</span>
         </h2>
         <div className="mt-8 grid gap-6 md:grid-cols-3">
           {values.map(({ icon: Icon, title, body }) => (

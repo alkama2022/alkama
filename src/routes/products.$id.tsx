@@ -13,15 +13,34 @@ import {
   Plus,
   ShoppingCart,
   Star,
-  Tag,
   X,
   ZoomIn,
 } from "lucide-react";
 
 export const Route = createFileRoute("/products/$id")({
   component: ProductDetail,
-  head: () => ({ meta: [{ title: "Product — Apex Tyres" }] }),
+  head: () => ({ meta: [{ title: "Product — Khal Tyres Company Limited" }] }),
 });
+
+// Speed rating → max speed label
+function speedRatingLabel(rating: string): string {
+  const map: Record<string, string> = {
+    N: "140 km/h",
+    P: "150 km/h",
+    Q: "160 km/h",
+    R: "170 km/h",
+    S: "180 km/h",
+    T: "190 km/h",
+    U: "200 km/h",
+    H: "210 km/h",
+    V: "240 km/h",
+    W: "270 km/h",
+    Y: "300 km/h",
+    Z: "240+ km/h",
+    ZR: "240+ km/h",
+  };
+  return map[rating.toUpperCase()] ?? "";
+}
 
 function ProductDetail() {
   const { id } = Route.useParams();
@@ -112,13 +131,9 @@ function ProductDetail() {
   const images = p.images ?? [];
   const reviewList: Review[] = Array.isArray(reviews.data)
     ? reviews.data
-    : reviews.data?.results ?? [];
+    : (reviews.data?.results ?? []);
 
-  const hasDiscount = p.discount_price != null && Number(p.discount_price) > 0 && Number(p.discount_price) < Number(p.price);
-  const savings = hasDiscount
-    ? (Number(p.price) - Number(p.discount_price!)).toFixed(2)
-    : null;
-  const displayPrice = hasDiscount ? p.discount_price! : p.price;
+  const displayPrice = p.price;
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
@@ -150,16 +165,8 @@ function ProductDetail() {
 
           {/* Price */}
           <div className="mt-5 flex items-baseline gap-3">
-            <span className="font-display text-4xl text-primary">₦{displayPrice}</span>
-            {hasDiscount && (
-              <>
-                <span className="text-lg text-muted-foreground line-through">₦{p.price}</span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-bold text-primary">
-                  <Tag className="h-3 w-3" /> Save ₦{savings}
-                </span>
-              </>
-            )}
-              <span className="ml-auto text-sm text-muted-foreground">per tyre</span>
+            <span className="font-display text-4xl text-primary">₦{p.price}</span>
+            <span className="ml-auto text-sm text-muted-foreground">per tyre</span>
           </div>
 
           {/* Stock badge */}
@@ -183,15 +190,11 @@ function ProductDetail() {
               Tyre specifications
             </div>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              <Spec label="Width" value={`${p.width} mm`} />
-              <Spec label="Aspect ratio" value={`${p.aspect_ratio}%`} />
-              <Spec label="Rim diameter" value={`R${p.rim_diameter}"`} />
-              <Spec label="Load index" value={`${p.load_index}`} />
-              <Spec label="Speed rating" value={p.speed_rating} />
+              <Spec label="Tyre size" value={p.tire_size} highlight />
+              <Spec label="Load index" value={`${p.load_index} kg`} />
               <Spec
-                label="Size"
-                value={`${p.width}/${p.aspect_ratio} R${p.rim_diameter}`}
-                highlight
+                label="Speed rating"
+                value={`${p.speed_rating} — ${speedRatingLabel(p.speed_rating)}`}
               />
             </div>
           </div>
@@ -240,13 +243,17 @@ function ProductDetail() {
               }`}
             >
               {justAdded ? (
-                <><Check className="h-4 w-4" /> Added!</>
+                <>
+                  <Check className="h-4 w-4" /> Added!
+                </>
               ) : addToCartMutation.isPending ? (
                 "Adding…"
               ) : p.inventory === 0 ? (
                 "Out of stock"
               ) : (
-                <><ShoppingCart className="h-4 w-4" /> Add to cart</>
+                <>
+                  <ShoppingCart className="h-4 w-4" /> Add to cart
+                </>
               )}
             </button>
           </div>
@@ -256,7 +263,7 @@ function ProductDetail() {
             <p className="mt-2 text-right text-sm text-muted-foreground">
               {qty} tyres ={" "}
               <span className="font-semibold text-primary">
-                ${(Number(displayPrice) * qty).toFixed(2)}
+                ₦{(Number(p.price) * qty).toFixed(2)}
               </span>
             </p>
           )}
@@ -449,14 +456,20 @@ function ImageGallery({ images, productName }: { images: ProductImage[]; product
             <>
               <button
                 className="absolute left-4 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/10 p-2 text-white transition hover:bg-white/25"
-                onClick={(e) => { e.stopPropagation(); prev(); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  prev();
+                }}
                 aria-label="Previous"
               >
                 <ChevronLeft className="h-7 w-7" />
               </button>
               <button
                 className="absolute right-4 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/10 p-2 text-white transition hover:bg-white/25"
-                onClick={(e) => { e.stopPropagation(); next(); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  next();
+                }}
                 aria-label="Next"
               >
                 <ChevronRight className="h-7 w-7" />
@@ -478,7 +491,10 @@ function ImageGallery({ images, productName }: { images: ProductImage[]; product
               {resolved.map((_, i) => (
                 <button
                   key={i}
-                  onClick={(e) => { e.stopPropagation(); setIdx(i); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIdx(i);
+                  }}
                   className={`h-2 w-2 rounded-full transition ${
                     i === idx ? "bg-white" : "bg-white/35 hover:bg-white/65"
                   }`}
@@ -493,7 +509,10 @@ function ImageGallery({ images, productName }: { images: ProductImage[]; product
               {resolved.map((im, i) => (
                 <button
                   key={im.id}
-                  onClick={(e) => { e.stopPropagation(); setIdx(i); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIdx(i);
+                  }}
                   className={`aspect-square w-14 flex-shrink-0 overflow-hidden rounded border-2 transition ${
                     i === idx ? "border-white" : "border-white/30 hover:border-white/70"
                   }`}
@@ -511,15 +530,7 @@ function ImageGallery({ images, productName }: { images: ProductImage[]; product
 
 // ── Spec tile ─────────────────────────────────────────────────────────────────
 
-function Spec({
-  label,
-  value,
-  highlight,
-}: {
-  label: string;
-  value: string;
-  highlight?: boolean;
-}) {
+function Spec({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
     <div
       className={`rounded-md p-2 ${highlight ? "bg-primary/10 ring-1 ring-primary/30" : "bg-background"}`}

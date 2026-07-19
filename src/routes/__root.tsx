@@ -69,13 +69,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Apex Tyres — Performance Tyres & Wheels" },
+      { title: "Khal Tyres Company Limited — Performance Tyres & Wheels" },
       {
         name: "description",
         content:
           "Shop premium performance tyres. Browse by brand, size and category. Fast local delivery and expert fitment.",
       },
-      { property: "og:title", content: "Apex Tyres — Performance Tyres & Wheels" },
+      { property: "og:title", content: "Khal Tyres Company Limited — Performance Tyres & Wheels" },
       {
         property: "og:description",
         content: "Premium performance tyres. Browse by brand, size and category.",
@@ -148,7 +148,7 @@ function Header() {
         <Link to="/" className="flex items-center gap-2">
           <span className="inline-block h-8 w-8 rounded-full border-2 border-primary bg-background" />
           <span className="font-display text-2xl tracking-wide">
-            APEX<span className="text-primary">.</span>TYRES
+            KHAL<span className="text-primary"> </span>TYRES
           </span>
         </Link>
         <nav className="hidden items-center gap-8 md:flex">
@@ -171,6 +171,7 @@ function Header() {
         <div className="flex items-center gap-2">
           <Link
             to="/cart"
+            preload={false}
             className="relative inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:brightness-110 transition"
           >
             <ShoppingCart className="h-4 w-4" />
@@ -221,7 +222,7 @@ function Footer() {
       <div className="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:px-6 md:grid-cols-3">
         <div>
           <div className="font-display text-2xl">
-            APEX<span className="text-primary">.</span>TYRES
+            KHAL<span className="text-primary"> </span>TYRES
           </div>
           <p className="mt-2 max-w-xs text-sm text-muted-foreground">
             Performance rubber for daily drivers, weekend warriors and everything in between.
@@ -232,8 +233,16 @@ function Footer() {
             Company
           </div>
           <ul className="mt-3 space-y-2 text-sm">
-            <li><Link to="/about" className="hover:text-primary">About us</Link></li>
-            <li><Link to="/contact" className="hover:text-primary">Contact</Link></li>
+            <li>
+              <Link to="/about" className="hover:text-primary">
+                About us
+              </Link>
+            </li>
+            <li>
+              <Link to="/contact" className="hover:text-primary">
+                Contact
+              </Link>
+            </li>
           </ul>
         </div>
         <div>
@@ -241,8 +250,16 @@ function Footer() {
             Shop
           </div>
           <ul className="mt-3 space-y-2 text-sm">
-            <li><Link to="/products" className="hover:text-primary">All tyres</Link></li>
-            <li><Link to="/cart" className="hover:text-primary">Cart</Link></li>
+            <li>
+              <Link to="/products" className="hover:text-primary">
+                All tyres
+              </Link>
+            </li>
+            <li>
+              <Link to="/cart" preload={false} className="hover:text-primary">
+                Cart
+              </Link>
+            </li>
           </ul>
         </div>
         <div>
@@ -250,13 +267,17 @@ function Footer() {
             Support
           </div>
           <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
-            <li><Link to="/contact" className="hover:text-primary">WhatsApp fitment advice</Link></li>
+            <li>
+              <Link to="/contact" className="hover:text-primary">
+                WhatsApp fitment advice
+              </Link>
+            </li>
             <li>Same-day dispatch on in-stock items</li>
           </ul>
         </div>
       </div>
       <div className="border-t border-border/60 py-4 text-center text-xs text-muted-foreground">
-        © {new Date().getFullYear()} Apex Tyres. All rights reserved.
+        © {new Date().getFullYear()} Khal Tyres Company Limited. All rights reserved.
       </div>
     </footer>
   );

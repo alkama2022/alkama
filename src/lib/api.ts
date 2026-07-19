@@ -36,8 +36,8 @@ export async function api<T = unknown>(path: string, opts: FetchOpts = {}): Prom
   let authHeader: Record<string, string> = {};
   try {
     const token =
-      typeof window !== "undefined" ? window.localStorage.getItem("apex.admin.token") : null;
-    if (token) authHeader = { Authorization: `JWT ${token}` };
+      typeof window !== "undefined" ? window.localStorage.getItem("khal.admin.token") : null;
+    if (token) authHeader = { Authorization: `Bearer ${token}` };
   } catch {
     /* ignore — SSR or storage blocked */
   }
@@ -95,32 +95,50 @@ export function mediaUrl(path: string | null | undefined): string | null {
 
 export type Product = {
   id: number;
-  brand: string;        // StringRelatedField — returns brand name
-  category: string;     // StringRelatedField — returns category name
+  brand: string; // StringRelatedField — returns brand name
+  brand_id: number;
+  category: string; // StringRelatedField — returns category name
+  category_id: number;
   model_name: string;
-  width: number;
-  aspect_ratio: number;
-  rim_diameter: number;
+  tire_size: string; // e.g. "205/55 R16"
   load_index: number;
   speed_rating: string;
   price: string;
-  discount_price?: string | null;
-  is_active?: boolean;
-  created_at?: string;
-  updated_at?: string;
   description: string;
   inventory: number;
+  is_active?: boolean;
   images: ProductImage[];
 };
 
-export type Brand = { id: number; name: string; products_count: number };
-export type Category = { id: number; name: string; products_count: number };
-export type Review = { id: number; name: string; description: string };
+export type Brand = {
+  id: number;
+  name: string;
+  slug?: string;
+  logo?: string | null;
+  products_count: number;
+  created_at?: string;
+};
+export type Category = {
+  id: number;
+  name: string;
+  slug?: string;
+  products_count: number;
+  created_at?: string;
+};
+export type Review = {
+  id: number;
+  name: string;
+  description: string;
+  date?: string;
+  product?: number;
+};
 
 export type SimpleProduct = {
   id: number;
   model_name: string;
   price: string;
+  brand?: string;
+  tire_size?: string;
   image?: string;
   images?: ProductImage[];
 };
@@ -136,6 +154,41 @@ export type Cart = {
   id: string;
   items: CartItem[];
   total_price: string | number;
+  created_at?: string;
+};
+
+export type Address = {
+  id: number;
+  customer?: number;
+  street: string;
+  city: string;
+  zip?: string;
+  country?: string;
+};
+
+export type Customer = {
+  id: number;
+  user?:
+    | number
+    | { id: number; first_name?: string; last_name?: string; email?: string; username?: string };
+  phone_number?: string;
+  birth_date?: string;
+  membership?: string;
+};
+
+export type OrderItem = {
+  id: number;
+  product?: { id: number; model_name: string } | null;
+  quantity: number;
+  unit_price: string | number;
+};
+
+export type Order = {
+  id: number;
+  customer?: number | { id: number; first_name?: string; last_name?: string };
+  payment_status?: string;
+  placed_at?: string;
+  items?: OrderItem[];
 };
 
 export type Paginated<T> = {

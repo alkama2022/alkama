@@ -3,6 +3,15 @@ import { useQuery } from "@tanstack/react-query";
 import { api, type Brand, type Category, type Paginated, type Product } from "@/lib/api";
 import { ProductCard } from "./index";
 import { Search } from "lucide-react";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 type ProductsSearch = {
   search?: string;
@@ -23,8 +32,11 @@ export const Route = createFileRoute("/products")({
   component: ProductsPage,
   head: () => ({
     meta: [
-      { title: "Shop Tyres — Apex Tyres" },
-      { name: "description", content: "Browse premium performance tyres by brand, category, and size." },
+      { title: "Shop Tyres — Khal Tyres Company Limited" },
+      {
+        name: "description",
+        content: "Browse premium performance tyres by brand, category, and size.",
+      },
     ],
   }),
 });
@@ -34,7 +46,7 @@ function ProductsPage() {
   const navigate = useNavigate({ from: Route.fullPath });
 
   const setSearch = (patch: Partial<ProductsSearch>) =>
-    navigate({ search: (prev: ProductsSearch) => ({ ...prev, ...patch, page: patch.page ?? 1 }) });
+    navigate({ search: (prev: ProductsSearch) => ({ ...prev, ...patch }) });
 
   const brands = useQuery({
     queryKey: ["brands"],
@@ -47,21 +59,21 @@ function ProductsPage() {
   const products = useQuery({
     queryKey: ["products", search],
     queryFn: () =>
-      api<Paginated<Product>>(`/products/`, {
+      api<Paginated<Product> | Product[]>(`/products/`, {
         params: {
           search: search.search,
           brand: search.brand,
           category: search.category,
           ordering: search.ordering,
-          page: search.page,
+          page: search.page ?? 1,
+          page_size: 24,
         },
       }),
   });
 
-  const brandList = Array.isArray(brands.data) ? brands.data : brands.data?.results ?? [];
-  const catList = Array.isArray(cats.data) ? cats.data : cats.data?.results ?? [];
-  const pageData = products.data;
-  const results = pageData?.results ?? [];
+  const brandList = Array.isArray(brands.data) ? brands.data : (brands.data?.results ?? []);
+  const catList = Array.isArray(cats.data) ? cats.data : (cats.data?.results ?? []);
+  const results = Array.isArray(products.data) ? products.data : (products.data?.results ?? []);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
@@ -70,7 +82,9 @@ function ProductsPage() {
           Shop <span className="text-primary">Tyres</span>
         </h1>
         <p className="mt-2 text-muted-foreground">
-          {pageData ? `${pageData.count} product${pageData.count === 1 ? "" : "s"} available` : "Loading catalog…"}
+          {products.isLoading
+            ? "Loading catalog…"
+            : `${results.length} product${results.length === 1 ? "" : "s"} available`}
         </p>
       </div>
 
@@ -85,7 +99,9 @@ function ProductsPage() {
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input
                 defaultValue={search.search ?? ""}
-                onChange={(e) => setSearch({ search: e.target.value || undefined })}
+                onChange={(e) =>
+                  setSearch({ search: e.target.value || undefined, page: undefined })
+                }
                 placeholder="Model, size, brand…"
                 className="w-full rounded-md border border-border bg-card py-2 pl-9 pr-3 text-sm outline-none focus:border-primary"
               />
@@ -96,13 +112,13 @@ function ProductsPage() {
             label="Brand"
             options={brandList.map((b) => ({ id: b.id, name: `${b.name} (${b.products_count})` }))}
             value={search.brand}
-            onChange={(v) => setSearch({ brand: v })}
+            onChange={(v) => setSearch({ brand: v, page: undefined })}
           />
           <FilterGroup
             label="Category"
             options={catList.map((c) => ({ id: c.id, name: `${c.name} (${c.products_count})` }))}
             value={search.category}
-            onChange={(v) => setSearch({ category: v })}
+            onChange={(v) => setSearch({ category: v, page: undefined })}
           />
 
           <div>
@@ -111,7 +127,9 @@ function ProductsPage() {
             </label>
             <select
               value={search.ordering ?? ""}
-              onChange={(e) => setSearch({ ordering: e.target.value || undefined })}
+              onChange={(e) =>
+                setSearch({ ordering: e.target.value || undefined, page: undefined })
+              }
               className="mt-2 w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:border-primary"
             >
               <option value="">Default</option>
@@ -123,9 +141,7 @@ function ProductsPage() {
           </div>
 
           <button
-            onClick={() =>
-              navigate({ search: {} })
-            }
+            onClick={() => navigate({ search: {} })}
             className="w-full rounded-md border border-border px-3 py-2 text-xs font-semibold uppercase tracking-widest hover:border-primary hover:text-primary"
           >
             Clear filters
@@ -156,25 +172,77 @@ function ProductsPage() {
             ))}
           </div>
 
-          {pageData && (pageData.next || pageData.previous) && (
-            <div className="mt-10 flex items-center justify-between">
-              <button
-                disabled={!pageData.previous}
-                onClick={() => setSearch({ page: (search.page ?? 1) - 1 })}
-                className="rounded-md border border-border px-4 py-2 text-sm font-semibold uppercase tracking-widest disabled:opacity-40 hover:border-primary hover:text-primary"
-              >
-                ← Prev
-              </button>
-              <div className="text-sm text-muted-foreground">Page {search.page ?? 1}</div>
-              <button
-                disabled={!pageData.next}
-                onClick={() => setSearch({ page: (search.page ?? 1) + 1 })}
-                className="rounded-md border border-border px-4 py-2 text-sm font-semibold uppercase tracking-widest disabled:opacity-40 hover:border-primary hover:text-primary"
-              >
-                Next →
-              </button>
-            </div>
-          )}
+          {(() => {
+            const count = Array.isArray(products.data) ? 0 : (products.data?.count ?? 0);
+            const pageSize = 24;
+            const totalPages = Math.ceil(count / pageSize);
+            const currentPage = search.page ?? 1;
+
+            if (totalPages <= 1) return null;
+
+            return (
+              <div className="mt-8 flex justify-center border-t border-border pt-6">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (currentPage > 1) setSearch({ page: currentPage - 1 });
+                        }}
+                        className={currentPage <= 1 ? "pointer-events-none opacity-50" : ""}
+                      />
+                    </PaginationItem>
+                    {Array.from({ length: totalPages }).map((_, idx) => {
+                      const p = idx + 1;
+                      if (
+                        totalPages > 5 &&
+                        Math.abs(p - currentPage) > 1 &&
+                        p !== 1 &&
+                        p !== totalPages
+                      ) {
+                        if (p === 2 || p === totalPages - 1) {
+                          return (
+                            <PaginationItem key={p}>
+                              <PaginationEllipsis />
+                            </PaginationItem>
+                          );
+                        }
+                        return null;
+                      }
+                      return (
+                        <PaginationItem key={p}>
+                          <PaginationLink
+                            href="#"
+                            isActive={currentPage === p}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setSearch({ page: p });
+                            }}
+                          >
+                            {p}
+                          </PaginationLink>
+                        </PaginationItem>
+                      );
+                    })}
+                    <PaginationItem>
+                      <PaginationNext
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (currentPage < totalPages) setSearch({ page: currentPage + 1 });
+                        }}
+                        className={
+                          currentPage >= totalPages ? "pointer-events-none opacity-50" : ""
+                        }
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            );
+          })()}
         </div>
       </div>
     </div>
