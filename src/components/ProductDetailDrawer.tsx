@@ -226,7 +226,7 @@ function DrawerContent({ productId, onClose }: { productId: number; onClose: () 
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             <SpecTile label="Tyre size" value={p.tire_size} highlight />
             <SpecTile label="Load index" value={`${p.load_index} kg`} />
-            <SpecTile label="Speed rating" value={`${p.speed_rating} — ${drawerSpeedLabel(p.speed_rating)}`} />
+           <SpecTile label="Speed rating" value={`${p.speed_rating}  Km/h`} />  {/*  — ${drawerSpeedLabel(p.speed_rating)} */}
           </div>
         </div>
 

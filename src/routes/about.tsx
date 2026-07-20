@@ -71,7 +71,7 @@ function AboutPage() {
         </div>
       </section>
 
-      {/* Leadership 
+      {/* Leadership /*/}
       <section className="border-b border-border bg-surface">
         <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
           <div className="flex flex-col items-start gap-6 sm:flex-row sm:items-center">
@@ -85,18 +85,18 @@ function AboutPage() {
               <div className="font-display text-3xl uppercase tracking-wide sm:text-4xl">
                 Ibrahim Tahir
               </div>
-              <a
+              {/* <a
                 href="tel:08039366958"
                 className="mt-2 inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline"
               >
                 <Phone className="h-4 w-4" />
                 0803 936 6958
-              </a>
+              </a> */}
             </div>
           </div>
         </div>
       </section>
-      */}
+      
       {/* Stats */}
       <section className="border-b border-border bg-background">
         <div className="mx-auto grid max-w-7xl gap-6 px-4 py-12 sm:px-6 sm:grid-cols-3">
