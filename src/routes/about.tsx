@@ -96,7 +96,7 @@ function AboutPage() {
           </div>
         </div>
       </section>
-      
+
       {/* Stats */}
       <section className="border-b border-border bg-background">
         <div className="mx-auto grid max-w-7xl gap-6 px-4 py-12 sm:px-6 sm:grid-cols-3">

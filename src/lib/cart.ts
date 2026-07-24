@@ -21,13 +21,14 @@ export async function ensureCart(): Promise<Cart> {
   const existing = getStoredCartId();
   if (existing) {
     try {
-      return await api<Cart>(`/cart/${existing}/`);
-    } catch {
+      return await api<Cart>(`/carts/${existing}/`);
+    } catch (e) {
+      // Cart not found or server error — clear stale ID and create a fresh one
       clearStoredCartId();
     }
   }
-  // Create a new cart — send empty body (Django expects POST with no required fields)
-  const created = await api<Cart>(`/cart/`, { method: "POST" });
+  // Create a new cart
+  const created = await api<Cart>(`/carts/`, { method: "POST" });
   setStoredCartId(created.id);
   return created;
 }
@@ -45,18 +46,18 @@ export async function addToCart(productId: number, quantity: number): Promise<Ca
 
   if (existing) {
     // Increment quantity on the existing item
-    await api<CartItem>(`/cart/${cart.id}/items/${existing.id}/`, {
+    await api<CartItem>(`/carts/${cart.id}/items/${existing.id}/`, {
       method: "PATCH",
       body: JSON.stringify({ quantity: existing.quantity + quantity }),
     });
   } else {
     // Create a new cart item
-    await api<CartItem>(`/cart/${cart.id}/items/`, {
+    await api<CartItem>(`/carts/${cart.id}/items/`, {
       method: "POST",
       body: JSON.stringify({ product_id: productId, quantity }),
     });
   }
 
   // Return the refreshed cart so callers always get up-to-date data
-  return api<Cart>(`/cart/${cart.id}/`);
+  return api<Cart>(`/carts/${cart.id}/`);
 }

@@ -281,10 +281,11 @@ export function ProductCard({ product }: { product: Product }) {
               type="button"
               disabled={outOfStock || add.isPending}
               onClick={() => add.mutate()}
-              className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold uppercase tracking-widest transition disabled:opacity-50 ${justAdded
+              className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold uppercase tracking-widest transition disabled:opacity-50 ${
+                justAdded
                   ? "bg-green-600 text-white"
                   : "bg-primary text-primary-foreground hover:brightness-110"
-                }`}
+              }`}
             >
               {justAdded ? (
                 <>

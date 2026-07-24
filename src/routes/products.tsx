@@ -63,12 +63,12 @@ function ProductsPage() {
 
   const brandList = Array.isArray(brands.data) ? brands.data : (brands.data?.results ?? []);
   const catList = Array.isArray(cats.data) ? cats.data : (cats.data?.results ?? []);
-  
+
   const allResults = Array.isArray(products.data) ? products.data : (products.data?.results ?? []);
   const currentPage = search.page ?? 1;
   const pageSize = 24;
-  
-  const results = Array.isArray(products.data) 
+
+  const results = Array.isArray(products.data)
     ? allResults.slice((currentPage - 1) * pageSize, currentPage * pageSize)
     : allResults;
 
@@ -170,7 +170,9 @@ function ProductsPage() {
           </div>
 
           {(() => {
-            const count = Array.isArray(products.data) ? products.data.length : (products.data?.count ?? 0);
+            const count = Array.isArray(products.data)
+              ? products.data.length
+              : (products.data?.count ?? 0);
             const totalPages = Math.ceil(count / pageSize);
 
             if (totalPages <= 1) return null;

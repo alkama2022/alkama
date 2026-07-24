@@ -173,7 +173,6 @@ function ContactPage() {
               <p className="mt-4 text-sm font-semibold uppercase tracking-wide text-primary">
                 We are always available during the above hours.
               </p>
-
             </div>
           </div>
 

@@ -1,10 +1,6 @@
 import axios from "axios";
 import { logout } from "@/lib/auth";
 
-
-
-
-
 // const api = axios.create({
 //     baseURL: import.meta.env.VITE_API_URL,
 //     headers: {
@@ -13,7 +9,6 @@ import { logout } from "@/lib/auth";
 // });
 
 // export default api;
-
 
 export const API_URL: string =
   ((import.meta.env.VITE_API_URL as string | undefined) ?? "").replace(/\/$/, "") ||
@@ -41,7 +36,7 @@ axiosInstance.interceptors.request.use(
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 // Response interceptor for error handling and automatic logout on 401
@@ -54,7 +49,7 @@ axiosInstance.interceptors.response.use(
         await logout();
       }
     }
-    
+
     // Format error message to match the old api wrapper behavior
     let msg = "Network Error";
     if (error.response) {
@@ -70,7 +65,7 @@ axiosInstance.interceptors.response.use(
       msg = error.message;
     }
     return Promise.reject(new Error(msg));
-  }
+  },
 );
 
 /**
@@ -95,11 +90,15 @@ export async function apiFetch<T = unknown>(path: string, opts: ApiFetchOptions 
   if (body instanceof FormData) {
     data = body; // Axios handles multipart/form-data + boundary automatically
   } else if (typeof body === "string") {
-    try { data = JSON.parse(body); } catch { data = body; }
+    try {
+      data = JSON.parse(body);
+    } catch {
+      data = body;
+    }
   } else {
     data = body ?? undefined;
   }
-  
+
   const response = await axiosInstance.request<T>({
     url: path,
     method,
@@ -107,6 +106,6 @@ export async function apiFetch<T = unknown>(path: string, opts: ApiFetchOptions 
     headers,
     data,
   });
-  
+
   return response.data;
 }

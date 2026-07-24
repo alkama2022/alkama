@@ -1,5 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
-import { api, type Paginated, type Product, type Brand, type Category, type Cart, type Review } from "@/lib/api";
+import {
+  api,
+  type Paginated,
+  type Product,
+  type Brand,
+  type Category,
+  type Cart,
+  type Review,
+} from "@/lib/api";
 
 export const queryKeys = {
   products: {
@@ -20,7 +28,7 @@ export const queryKeys = {
   },
   admin: {
     count: (resource: string) => ["admin-count", resource] as const,
-  }
+  },
 };
 
 export function useProducts(filters: Record<string, any> = {}) {
@@ -66,7 +74,7 @@ export function useCart(id: string | null) {
     queryKey: queryKeys.cart.detail(),
     queryFn: () => {
       if (!id) return Promise.reject(new Error("No cart ID"));
-      return api<Cart>(`/cart/${id}/`);
+      return api<Cart>(`/carts/${id}/`);
     },
     enabled: !!id,
   });
