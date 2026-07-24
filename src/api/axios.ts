@@ -12,7 +12,7 @@ import { logout } from "@/lib/auth";
 //     },
 // });
 
-export default api;
+// export default api;
 
 
 export const API_URL: string =
