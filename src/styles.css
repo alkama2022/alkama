@@ -65,6 +65,54 @@
   --ring: oklch(0.63 0.235 25);
 }
 
+[data-theme="protanopia"],
+[data-theme="deuteranopia"] {
+  --background: oklch(0.15 0 0);
+  --surface: oklch(0.18 0 0);
+  --card: oklch(0.2 0 0);
+  --popover: oklch(0.2 0 0);
+  --border: oklch(0.3 0 0);
+  --input: oklch(0.28 0 0);
+  --primary: oklch(0.65 0.2 250); /* Blue */
+  --accent: oklch(0.65 0.2 250);
+  --ring: oklch(0.65 0.2 250);
+}
+
+[data-theme="tritanopia"] {
+  --background: oklch(0.15 0.01 30);
+  --surface: oklch(0.18 0.01 30);
+  --card: oklch(0.2 0.01 30);
+  --popover: oklch(0.2 0.01 30);
+  --border: oklch(0.3 0.01 30);
+  --input: oklch(0.28 0.01 30);
+  --primary: oklch(0.7 0.15 180); /* Bright Cyan */
+  --accent: oklch(0.7 0.15 180);
+  --ring: oklch(0.7 0.15 180);
+}
+
+[data-theme="high-contrast"] {
+  --background: oklch(0 0 0);
+  --foreground: oklch(1 0 0);
+  --surface: oklch(0 0 0);
+  --card: oklch(0 0 0);
+  --card-foreground: oklch(1 0 0);
+  --popover: oklch(0 0 0);
+  --popover-foreground: oklch(1 0 0);
+  --primary: oklch(0.9 0.2 100); /* Bright Yellow */
+  --primary-foreground: oklch(0 0 0);
+  --secondary: oklch(0.1 0 0);
+  --secondary-foreground: oklch(1 0 0);
+  --muted: oklch(0.1 0 0);
+  --muted-foreground: oklch(0.8 0 0);
+  --accent: oklch(0.9 0.2 100);
+  --accent-foreground: oklch(0 0 0);
+  --destructive: oklch(0.6 0.24 27);
+  --destructive-foreground: oklch(1 0 0);
+  --border: oklch(1 0 0);
+  --input: oklch(0.1 0 0);
+  --ring: oklch(0.9 0.2 100);
+}
+
 @layer base {
   * {
     border-color: var(--color-border);

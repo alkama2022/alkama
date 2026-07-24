@@ -15,6 +15,7 @@ import { reportClientError } from "../lib/error-reporting";
 import { getStoredCartId } from "../lib/cart";
 import { Toaster } from "@/components/ui/sonner";
 import { useCart } from "@/hooks/queries";
+import { AccessibilityThemeSwitcher } from "@/components/AccessibilityThemeSwitcher";
 
 function NotFoundComponent() {
   return (
@@ -105,6 +106,18 @@ function RootShell({ children }: { children: ReactNode }) {
     <html lang="en">
       <head>
         <HeadContent />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                const theme = localStorage.getItem("khal.accessibility.theme");
+                if (theme && theme !== "default") {
+                  document.documentElement.setAttribute("data-theme", theme);
+                }
+              } catch (e) {}
+            `,
+          }}
+        />
       </head>
       <body>
         {children}
@@ -146,6 +159,7 @@ function Header() {
           </Link>
         </nav>
         <div className="flex items-center gap-2">
+          <AccessibilityThemeSwitcher />
           <Link
             to="/cart"
             preload={false}
@@ -193,7 +207,7 @@ function Header() {
 function Footer() {
   return (
     <footer className="mt-24 border-t border-border/60 bg-surface">
-      <div className="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:px-6 md:grid-cols-3">
+      <div className="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:px-6 md:grid-cols-4">
         <div>
           <div className="font-display text-2xl">
             KHAL<span className="text-primary"> </span>TYRES
@@ -248,6 +262,14 @@ function Footer() {
             </li>
             <li>Same-day dispatch on in-stock items</li>
           </ul>
+        </div>
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            Settings
+          </div>
+          <div className="mt-3 text-sm">
+            <AccessibilityThemeSwitcher />
+          </div>
         </div>
       </div>
       <div className="border-t border-border/60 py-4 text-center text-xs text-muted-foreground">
