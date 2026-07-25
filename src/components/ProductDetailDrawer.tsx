@@ -68,7 +68,6 @@ export function ProductDetailDrawer({ productId, onClose }: Props) {
             { to: "/products", label: "Shop" },
             { to: "/about", label: "About" },
             { to: "/contact", label: "Contact" },
-            { to: "/admin", label: "Admin" },
           ].map(({ to, label }) => (
             <Link
               key={to}
