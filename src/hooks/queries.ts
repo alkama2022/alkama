@@ -74,7 +74,7 @@ export function useCart(id: string | null) {
     queryKey: queryKeys.cart.detail(),
     queryFn: () => {
       if (!id) return Promise.reject(new Error("No cart ID"));
-      return api<Cart>(`/carts/${id}/`);
+      return api<Cart>(`/cart/${id}/`);
     },
     enabled: !!id,
   });

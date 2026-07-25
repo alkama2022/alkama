@@ -27,7 +27,7 @@ function CartPage() {
     mutationFn: async ({ itemId, quantity }: { itemId: number; quantity: number }) => {
       const id = getStoredCartId();
       if (!id) throw new Error("No active cart.");
-      return api(`/carts/${id}/items/${itemId}/`, {
+      return api(`/cart/${id}/items/${itemId}/`, {
         method: "PATCH",
         body: JSON.stringify({ quantity }),
       });
@@ -48,7 +48,7 @@ function CartPage() {
     mutationFn: async (itemId: number) => {
       const id = getStoredCartId();
       if (!id) throw new Error("No active cart.");
-      return api(`/carts/${id}/items/${itemId}/`, { method: "DELETE" });
+      return api(`/cart/${id}/items/${itemId}/`, { method: "DELETE" });
     },
     onSuccess: invalidate,
     onError: (e: Error) => {
