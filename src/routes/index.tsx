@@ -29,7 +29,7 @@ function Home() {
         {/* Full-bleed background image with dark overlay */}
         <div className="absolute inset-0">
           <img
-            src="/hero-tyres.jpg"
+            src="/hero-tyres2.jpeg"
             alt=""
             className="h-full w-full object-cover object-center"
             aria-hidden
@@ -70,7 +70,7 @@ function Home() {
           <div className="relative hidden items-center justify-center md:flex">
             <div className="relative h-full max-h-[420px] w-full overflow-hidden rounded-2xl border border-border/60 shadow-2xl">
               <img
-                src="/hero-tyres.jpg"
+                src="/hero-tyres2.jpeg"
                 alt="Khal Tyres shop — stacked tyres ready for dispatch"
                 className="h-full w-full object-cover object-center"
               />
