@@ -8,6 +8,7 @@ import {
   type Cart,
   type Review,
 } from "@/lib/api";
+import { clearStoredCartId } from "@/lib/cart";
 
 export const queryKeys = {
   products: {
@@ -72,10 +73,19 @@ export function useProductReviews(id: string | number) {
 export function useCart(id: string | null) {
   return useQuery({
     queryKey: queryKeys.cart.detail(),
-    queryFn: () => {
-      if (!id) return Promise.reject(new Error("No cart ID"));
-      return api<Cart>(`/cart/${id}/`);
+    queryFn: async () => {
+      if (!id) return { id: "", items: [], total_price: 0 } as Cart;
+      try {
+        return await api<Cart>(`/cart/${id}/`);
+      } catch (e) {
+        // Stale cart ID — clear it and return empty cart silently
+        if (e instanceof Error && (e.message.includes("404") || e.message.includes("500"))) {
+          clearStoredCartId();
+          return { id: "", items: [], total_price: 0 } as Cart;
+        }
+        throw e;
+      }
     },
-    enabled: !!id,
+    enabled: true,
   });
 }
