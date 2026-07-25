@@ -1,5 +1,9 @@
 import { api, type Cart, type CartItem } from "./api";
 
+// No cart ID needed — the backend manages the cart via session/cookie.
+// We only store the cart ID locally to display the cart count in the header,
+// but all operations go through the session on the server.
+
 const CART_KEY = "trx_cart_id";
 
 export function getStoredCartId(): string | null {
@@ -17,47 +21,36 @@ export function clearStoredCartId() {
   window.localStorage.removeItem(CART_KEY);
 }
 
+/**
+ * Get or create the cart. Always POST /cart/ — the server returns
+ * the current session cart (or creates a new one).
+ */
 export async function ensureCart(): Promise<Cart> {
-  const existing = getStoredCartId();
-  if (existing) {
-    try {
-      return await api<Cart>(`/cart/${existing}/`);
-    } catch {
-      // Cart not found or server error — clear stale ID and create a fresh one
-      clearStoredCartId();
-    }
-  }
-  // Create a new cart
-  const created = await api<Cart>(`/cart/`, { method: "POST" });
-  setStoredCartId(created.id);
-  return created;
+  const cart = await api<Cart>(`/cart/`, { method: "POST" });
+  if (cart.id) setStoredCartId(String(cart.id));
+  return cart;
 }
 
 /**
  * Add `quantity` of `productId` to the cart.
- * If the item already exists, increment its quantity rather than erroring.
- * Returns the updated Cart.
  */
 export async function addToCart(productId: number, quantity: number): Promise<Cart> {
   const cart = await ensureCart();
 
-  // Check if this product is already in the cart
   const existing = cart.items.find((i) => i.product.id === productId);
 
   if (existing) {
-    // Increment quantity on the existing item
-    await api<CartItem>(`/cart/${cart.id}/items/${existing.id}/`, {
+    await api<CartItem>(`/cart/items/${existing.id}/`, {
       method: "PATCH",
       body: JSON.stringify({ quantity: existing.quantity + quantity }),
     });
   } else {
-    // Create a new cart item
-    await api<CartItem>(`/cart/${cart.id}/items/`, {
+    await api<CartItem>(`/cart/items/`, {
       method: "POST",
       body: JSON.stringify({ product_id: productId, quantity }),
     });
   }
 
-  // Return the refreshed cart so callers always get up-to-date data
-  return api<Cart>(`/cart/${cart.id}/`);
+  // Return refreshed cart
+  return api<Cart>(`/cart/`, { method: "POST" });
 }

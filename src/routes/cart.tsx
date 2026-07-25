@@ -25,41 +25,21 @@ function CartPage() {
 
   const updateItem = useMutation({
     mutationFn: async ({ itemId, quantity }: { itemId: number; quantity: number }) => {
-      const id = getStoredCartId();
-      if (!id) throw new Error("No active cart.");
-      return api(`/cart/${id}/items/${itemId}/`, {
+      return api(`/cart/items/${itemId}/`, {
         method: "PATCH",
         body: JSON.stringify({ quantity }),
       });
     },
     onSuccess: invalidate,
-    onError: (e: Error) => {
-      if (e.message.includes("404") || e.message.includes("500")) {
-        clearStoredCartId();
-        invalidate();
-        toast.error("Your cart session expired. Please add items again.");
-      } else {
-        toast.error(e.message);
-      }
-    },
+    onError: (e: Error) => toast.error(e.message),
   });
 
   const removeItem = useMutation({
     mutationFn: async (itemId: number) => {
-      const id = getStoredCartId();
-      if (!id) throw new Error("No active cart.");
-      return api(`/cart/${id}/items/${itemId}/`, { method: "DELETE" });
+      return api(`/cart/items/${itemId}/`, { method: "DELETE" });
     },
     onSuccess: invalidate,
-    onError: (e: Error) => {
-      if (e.message.includes("404") || e.message.includes("500")) {
-        clearStoredCartId();
-        invalidate();
-        toast.error("Your cart session expired. Please add items again.");
-      } else {
-        toast.error(e.message);
-      }
-    },
+    onError: (e: Error) => toast.error(e.message),
   });
 
   if (cart.isLoading) {

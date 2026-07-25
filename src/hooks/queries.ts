@@ -70,20 +70,14 @@ export function useProductReviews(id: string | number) {
   });
 }
 
-export function useCart(id: string | null) {
+export function useCart(_id?: string | null) {
   return useQuery({
     queryKey: queryKeys.cart.detail(),
     queryFn: async () => {
-      if (!id) return { id: "", items: [], total_price: 0 } as Cart;
       try {
-        return await api<Cart>(`/cart/${id}/`);
-      } catch (e) {
-        // Stale cart ID — clear it and return empty cart silently
-        if (e instanceof Error && (e.message.includes("404") || e.message.includes("500"))) {
-          clearStoredCartId();
-          return { id: "", items: [], total_price: 0 } as Cart;
-        }
-        throw e;
+        return await api<Cart>(`/cart/`, { method: "POST" });
+      } catch {
+        return { id: "", items: [], total_price: 0 } as Cart;
       }
     },
     enabled: true,
