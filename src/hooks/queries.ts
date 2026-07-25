@@ -8,7 +8,7 @@ import {
   type Cart,
   type Review,
 } from "@/lib/api";
-import { clearStoredCartId } from "@/lib/cart";
+import { clearStoredCartId, getStoredCartId } from "@/lib/cart";
 
 export const queryKeys = {
   products: {
@@ -74,9 +74,12 @@ export function useCart(_id?: string | null) {
   return useQuery({
     queryKey: queryKeys.cart.detail(),
     queryFn: async () => {
+      const id = getStoredCartId();
+      if (!id) return { id: "", items: [], total_price: 0 } as Cart;
       try {
-        return await api<Cart>(`/cart/`, { method: "POST" });
+        return await api<Cart>(`/cart/${id}/`);
       } catch {
+        clearStoredCartId();
         return { id: "", items: [], total_price: 0 } as Cart;
       }
     },

@@ -1,9 +1,5 @@
 import { api, type Cart, type CartItem } from "./api";
 
-// No cart ID needed — the backend manages the cart via session/cookie.
-// We only store the cart ID locally to display the cart count in the header,
-// but all operations go through the session on the server.
-
 const CART_KEY = "trx_cart_id";
 
 export function getStoredCartId(): string | null {
@@ -22,13 +18,23 @@ export function clearStoredCartId() {
 }
 
 /**
- * Get or create the cart. Always POST /cart/ — the server returns
- * the current session cart (or creates a new one).
+ * Get or create the cart.
+ * - If we have a stored UUID, try GET /cart/{uuid}/
+ * - If that fails (404/500), clear it and create a new one via POST /cart/
  */
 export async function ensureCart(): Promise<Cart> {
-  const cart = await api<Cart>(`/cart/`, { method: "POST" });
-  if (cart.id) setStoredCartId(String(cart.id));
-  return cart;
+  const existing = getStoredCartId();
+  if (existing) {
+    try {
+      return await api<Cart>(`/cart/${existing}/`);
+    } catch {
+      // Stale ID — clear and create fresh
+      clearStoredCartId();
+    }
+  }
+  const created = await api<Cart>(`/cart/`, { method: "POST" });
+  setStoredCartId(String(created.id));
+  return created;
 }
 
 /**
@@ -40,17 +46,16 @@ export async function addToCart(productId: number, quantity: number): Promise<Ca
   const existing = cart.items.find((i) => i.product.id === productId);
 
   if (existing) {
-    await api<CartItem>(`/cart/items/${existing.id}/`, {
+    await api<CartItem>(`/cart/${cart.id}/items/${existing.id}/`, {
       method: "PATCH",
       body: JSON.stringify({ quantity: existing.quantity + quantity }),
     });
   } else {
-    await api<CartItem>(`/cart/items/`, {
+    await api<CartItem>(`/cart/${cart.id}/items/`, {
       method: "POST",
       body: JSON.stringify({ product_id: productId, quantity }),
     });
   }
 
-  // Return refreshed cart
-  return api<Cart>(`/cart/`, { method: "POST" });
+  return api<Cart>(`/cart/${cart.id}/`);
 }

@@ -25,7 +25,9 @@ function CartPage() {
 
   const updateItem = useMutation({
     mutationFn: async ({ itemId, quantity }: { itemId: number; quantity: number }) => {
-      return api(`/cart/items/${itemId}/`, {
+      const id = getStoredCartId();
+      if (!id) throw new Error("No active cart.");
+      return api(`/cart/${id}/items/${itemId}/`, {
         method: "PATCH",
         body: JSON.stringify({ quantity }),
       });
@@ -36,7 +38,9 @@ function CartPage() {
 
   const removeItem = useMutation({
     mutationFn: async (itemId: number) => {
-      return api(`/cart/items/${itemId}/`, { method: "DELETE" });
+      const id = getStoredCartId();
+      if (!id) throw new Error("No active cart.");
+      return api(`/cart/${id}/items/${itemId}/`, { method: "DELETE" });
     },
     onSuccess: invalidate,
     onError: (e: Error) => toast.error(e.message),
