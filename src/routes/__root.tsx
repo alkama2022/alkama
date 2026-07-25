@@ -336,12 +336,16 @@ function RootComponent() {
   useKeepAlive();
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="flex min-h-screen flex-col">
+      <div className="flex min-h-screen flex-col pb-10">
         <Header />
         <main className="flex-1">
           <Outlet />
         </main>
         <Footer />
+      </div>
+      {/* Fixed copyright bar — always visible like the header */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-border/60 bg-surface py-2.5 text-center text-xs text-muted-foreground">
+        © {new Date().getFullYear()} Khal Tyres Company Limited. All rights reserved.
       </div>
       <Toaster />
       <WakeUpBanner />
