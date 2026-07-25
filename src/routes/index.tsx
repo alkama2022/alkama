@@ -14,12 +14,12 @@ export const Route = createFileRoute("/")({
 });
 
 function Home() {
-  const featured = useProducts({ ordering: "-id", page_size: 3 });
+  const featured = useProducts({ ordering: "-id", page_size: 6 });
   const brands = useBrands();
 
   const products = (
     Array.isArray(featured.data) ? featured.data : (featured.data?.results ?? [])
-  ).slice(0, 3);
+  ).slice(0, 6);
   const brandList = Array.isArray(brands.data) ? brands.data : (brands.data?.results ?? []);
 
   return (
@@ -33,6 +33,7 @@ function Home() {
             alt=""
             className="h-full w-full object-cover object-center"
             aria-hidden
+            fetchPriority="high"
           />
           <div className="absolute inset-0 bg-background/80" />
         </div>
@@ -127,7 +128,7 @@ function Home() {
         </div>
         <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {featured.isLoading &&
-            Array.from({ length: 3 }).map((_, i) => (
+            Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="h-72 animate-pulse rounded-lg bg-surface" />
             ))}
           {products.map((p) => (

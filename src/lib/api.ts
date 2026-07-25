@@ -14,7 +14,7 @@ export const API_URL: string =
   "http://localhost:8000/api";
 
 export const WHATSAPP_NUMBER: string =
-  (import.meta.env.VITE_WHATSAPP_NUMBER as string | undefined) || "1234567890";
+  (import.meta.env.VITE_WHATSAPP_NUMBER as string | undefined) || "+2348039366958";
 
 type FetchOpts = RequestInit & { params?: Record<string, string | number | undefined | null> };
 

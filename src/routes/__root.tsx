@@ -16,6 +16,55 @@ import { getStoredCartId } from "../lib/cart";
 import { Toaster } from "@/components/ui/sonner";
 import { useCart } from "@/hooks/queries";
 import { AccessibilityThemeSwitcher } from "@/components/AccessibilityThemeSwitcher";
+import { API_URL } from "@/lib/api";
+
+// ---------------------------------------------------------------------------
+// Keep-alive: ping the backend every 4 minutes so Render never cold-starts
+// ---------------------------------------------------------------------------
+function useKeepAlive() {
+  useEffect(() => {
+    // Ping immediately on first load, then every 4 minutes
+    const ping = () =>
+      fetch(`${API_URL}/products/?page_size=1`, { method: "GET" }).catch(() => {});
+    ping();
+    const id = setInterval(ping, 4 * 60 * 1000);
+    return () => clearInterval(id);
+  }, []);
+}
+
+// ---------------------------------------------------------------------------
+// Wake-up banner: shown while backend is cold-starting
+// ---------------------------------------------------------------------------
+function WakeUpBanner() {
+  const [slow, setSlow] = useState(false);
+  const [hidden, setHidden] = useState(false);
+
+  useEffect(() => {
+    // Show banner if backend takes more than 3 seconds
+    const t = setTimeout(() => setSlow(true), 3000);
+    const start = Date.now();
+    fetch(`${API_URL}/products/?page_size=1`)
+      .then(() => {
+        clearTimeout(t);
+        setSlow(false);
+        setHidden(true);
+      })
+      .catch(() => {
+        clearTimeout(t);
+        setHidden(true);
+      });
+    return () => clearTimeout(t);
+  }, []);
+
+  if (!slow || hidden) return null;
+
+  return (
+    <div className="fixed bottom-4 left-1/2 z-[100] -translate-x-1/2 rounded-lg border border-border bg-card px-5 py-3 shadow-xl text-sm text-muted-foreground flex items-center gap-3">
+      <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      Server is waking up, please wait a moment…
+    </div>
+  );
+}
 
 function NotFoundComponent() {
   return (
@@ -92,6 +141,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap",
+        // @ts-ignore
+        media: "print",
+        onload: "this.media='all'",
       },
     ],
   }),
@@ -281,6 +333,7 @@ function Footer() {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  useKeepAlive();
   return (
     <QueryClientProvider client={queryClient}>
       <div className="flex min-h-screen flex-col">
@@ -291,6 +344,7 @@ function RootComponent() {
         <Footer />
       </div>
       <Toaster />
+      <WakeUpBanner />
     </QueryClientProvider>
   );
 }

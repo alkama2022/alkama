@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import {
   api,
   type Paginated,
@@ -14,6 +14,7 @@ export const queryKeys = {
   products: {
     all: ["products"] as const,
     list: (filters: Record<string, any>) => ["products", filters] as const,
+    infinite: (filters: Record<string, any>) => ["products-infinite", filters] as const,
     featured: () => ["featured-products"] as const,
     detail: (id: string | number) => ["product", String(id)] as const,
     reviews: (id: string | number) => ["reviews", String(id)] as const,
@@ -39,6 +40,35 @@ export function useProducts(filters: Record<string, any> = {}) {
       api<Paginated<Product> | Product[]>(`/products/`, {
         params: filters,
       }),
+  });
+}
+
+/**
+ * Infinite-scroll version of useProducts.
+ * Loads 12 products per page and appends on scroll.
+ */
+export function useInfiniteProducts(filters: Record<string, any> = {}) {
+  // Strip page from filters — we manage it internally
+  const { page: _page, page_size: _ps, ...baseFilters } = filters;
+
+  return useInfiniteQuery({
+    queryKey: queryKeys.products.infinite(baseFilters),
+    queryFn: ({ pageParam = 1 }) =>
+      api<Paginated<Product>>(`/products/`, {
+        params: { ...baseFilters, page: pageParam, page_size: 12 },
+      }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => {
+      if (!lastPage.next) return undefined;
+      // Extract page number from DRF's `next` URL
+      try {
+        const url = new URL(lastPage.next);
+        const p = url.searchParams.get("page");
+        return p ? Number(p) : undefined;
+      } catch {
+        return undefined;
+      }
+    },
   });
 }
 
